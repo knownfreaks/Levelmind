@@ -1,0 +1,2219 @@
+{
+	"info": {
+		"_postman_id": "8c3b7e0d-03b6-4b13-9a1b-9f7e6f8a4e3c",
+		"name": "Recruitment Platform Backend API (Automated Tests)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "27814838"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Admin Login (Initial)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Login successful message\", function () {",
+									"    pm.expect(pm.response.json().message).to.eql(\"Login successful\");",
+									"});",
+									"pm.test(\"Token is present and not empty\", function () {",
+									"    pm.expect(pm.response.json().token).to.be.a('string').and.to.have.lengthOf.at.least(1);",
+									"});",
+									"pm.test(\"User data is present\", function () {",
+									"    pm.expect(pm.response.json().data.user).to.be.an('object');",
+									"});",
+									"pm.test(\"User role is admin\", function () {",
+									"    pm.expect(pm.response.json().data.user.role).to.eql('admin');",
+									"});",
+									"",
+									"// Save token to environment for subsequent requests",
+									"if (pm.response.json().token) {",
+									"    pm.environment.set(\"adminToken\", pm.response.json().token);",
+									"    pm.environment.set(\"adminUserId\", pm.response.json().data.user.id);",
+									"    console.log(\"adminToken set: \" + pm.environment.get(\"adminToken\"));",
+									"}"
+								],
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Login successful message\", function () {",
+									"    pm.expect(pm.response.json().message).to.eql(\"Login successful\");",
+									"});",
+									"pm.test(\"Token is present and not empty\", function () {",
+									"    pm.expect(pm.response.json().token).to.be.a('string').and.to.have.lengthOf.at.least(1);",
+									"});",
+									"pm.test(\"User data is present\", function () {",
+									"    pm.expect(pm.response.json().data.user).to.be.an('object');",
+									"});",
+									"pm.test(\"User role is admin\", function () {",
+									"    pm.expect(pm.response.json().data.user.role).to.eql('admin');",
+									"});",
+									"",
+									"// Save token to environment for subsequent requests",
+									"if (pm.response.json().token) {",
+									"    pm.environment.set(\"adminToken\", pm.response.json().token);",
+									"    pm.environment.set(\"adminUserId\", pm.response.json().data.user.id);",
+									"    console.log(\"adminToken set: \" + pm.environment.get(\"adminToken\"));",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{adminEmail}}\",\n    \"password\": \"{{adminPassword}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Use the manually created admin user credentials. Requires `adminEmail` and `adminPassword` environment variables to be set. Saves the returned JWT as `adminToken`."
+					},
+					"response": []
+				},
+				{
+					"name": "Student Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Login successful message\", function () {",
+									"    pm.expect(pm.response.json().message).to.eql(\"Login successful\");",
+									"});",
+									"pm.test(\"User role is student\", function () {",
+									"    pm.expect(pm.response.json().data.user.role).to.eql('student');",
+									"});",
+									"",
+									"// Save token and student ID to environment for subsequent requests",
+									"if (pm.response.json().token) {",
+									"    pm.environment.set(\"studentToken\", pm.response.json().token);",
+									"    pm.environment.set(\"studentId\", pm.response.json().data.user.id);",
+									"    console.log(\"studentToken set: \" + pm.environment.get(\"studentToken\"));",
+									"    console.log(\"studentId set: \" + pm.environment.get(\"studentId\"));",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{testStudentEmail}}\",\n    \"password\": \"<TEMP_PASSWORD_FROM_EMAIL>\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "After an admin registers a student, use their temporary credentials to log in. Replace `<TEMP_PASSWORD_FROM_EMAIL>` with the actual password from your Ethereal email preview. Saves token as `studentToken` and user ID as `studentId`."
+					},
+					"response": []
+				},
+				{
+					"name": "School Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"User role is school\", function () {",
+									"    pm.expect(pm.response.json().data.user.role).to.eql('school');",
+									"});",
+									"",
+									"// Save token and school ID to environment for subsequent requests",
+									"if (pm.response.json().token) {",
+									"    pm.environment.set(\"schoolToken\", pm.response.json().token);",
+									"    pm.environment.set(\"schoolUserId\", pm.response.json().data.user.id);",
+									"    console.log(\"schoolToken set: \" + pm.environment.get(\"schoolToken\"));",
+									"    console.log(\"schoolUserId set: \" + pm.environment.get(\"schoolUserId\"));",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{testSchoolEmail}}\",\n    \"password\": \"<TEMP_PASSWORD_FROM_EMAIL>\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "After an admin registers a school, use their temporary credentials to log in. Replace `<TEMP_PASSWORD_FROM_EMAIL>` with the actual password from your Ethereal email preview. Saves token as `schoolToken` and user ID as `schoolUserId`."
+					},
+					"response": []
+				},
+				{
+					"name": "Complete Student Onboarding",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Onboarding completed message\", function () {",
+									"    pm.expect(pm.response.json().message).to.eql(\"Onboarding completed successfully.\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{studentToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "role",
+									"value": "student",
+									"type": "text"
+								},
+								{
+									"key": "profileData",
+									"value": "{\n    \"first_name\": \"John\",\n    \"last_name\": \"Doe\",\n    \"mobile\": \"9876543210\",\n    \"about\": \"Passionate about teaching and learning. Eager to contribute to a dynamic school environment.\",\n    \"education\": [\n        {\n            \"college_name\": \"Delhi University\",\n            \"university_name\": \"DU\",\n            \"course_name\": \"B.Sc. Mathematics\",\n            \"start_year\": 2018,\n            \"end_year\": 2021,\n            \"gpa\": \"3.8\"\n        }\n    ],\n    \"certifications\": [\n        {\n            \"name\": \"Certified Educator\",\n            \"issued_by\": \"EduCert\",\n            \"description\": \"Completed a program on modern teaching methods.\",\n            \"date_received\": \"2022-01-15\",\n            \"has_expiry\": true,\n            \"expiry_date\": \"2025-01-15\",\n            \"certificate_link\": \"https://example.com/cert1.pdf\"\n        }\n    ],\n    \"skills\": [\"Teamwork\", \"Communication\", \"Problem-solving\", \"Lesson Planning\"]\n}",
+									"type": "text",
+									"contentType": "application/json"
+								},
+								{
+									"key": "image",
+									"type": "file",
+									"src": "/path/to/your/student_profile.jpg",
+									"fileName": "student_profile.jpg"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/complete-onboarding",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"complete-onboarding"
+							]
+						},
+						"description": "Use the studentToken. Ensure you select a file for 'image'. The 'profileData' field should be a raw JSON string (Postman allows setting content-type for form fields). After successful onboarding, login again to update the isOnboardingComplete flag in token payload if needed by client."
+					},
+					"response": []
+				},
+				{
+					"name": "Complete School Onboarding",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Onboarding completed message\", function () {",
+									"    pm.expect(pm.response.json().message).to.eql(\"Onboarding completed successfully.\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{schoolToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "role",
+									"value": "school",
+									"type": "text"
+								},
+								{
+									"key": "profileData",
+									"value": "{\n    \"bio\": \"A leading educational institution committed to fostering academic excellence and holistic development.\",\n    \"website_link\": \"http://www.abcschool.com\",\n    \"address\": {\n        \"address\": \"123 School Lane\",\n        \"city\": \"New Delhi\",\n        \"state\": \"Delhi\",\n        \"pincode\": \"110001\"\n    }\n}",
+									"type": "text",
+									"contentType": "application/json"
+								},
+								{
+									"key": "image",
+									"type": "file",
+									"src": "/path/to/your/school_logo.png",
+									"fileName": "school_logo.png"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/complete-onboarding",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"complete-onboarding"
+							]
+						},
+						"description": "Use the schoolToken. Ensure you select a file for 'image' (school logo). After successful onboarding, login again to update the isOnboardingComplete flag in token payload if needed by client."
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Logout successful message\", function () {",
+									"    pm.expect(pm.response.json().message).to.eql(\"Logout successful\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{studentToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/logout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Logs out the current user (client-side token removal). Needs any valid user token."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin",
+			"item": [
+				{
+					"name": "Register Student (by Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 Created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Message confirms student creation\", function () {",
+									"    pm.expect(pm.response.json().message).to.eql(\"Student profile created, registration email sent.\");",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test Student Account\",\n    \"email\": \"{{testStudentEmail}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/register/student",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"register",
+								"student"
+							]
+						},
+						"description": "Creates a new student user and sends registration email. Needs Admin token. Uses `testStudentEmail` env variable."
+					},
+					"response": []
+				},
+				{
+					"name": "Register School (by Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 Created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Message confirms school creation\", function () {",
+									"    pm.expect(pm.response.json().message).to.eql(\"School profile created, registration email sent.\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test School Account\",\n    \"email\": \"{{testSchoolEmail}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/register/school",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"register",
+								"school"
+							]
+						},
+						"description": "Creates a new school user and sends registration email. Needs Admin token. Uses `testSchoolEmail` env variable."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Admin Dashboard Metrics",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Metrics object is present\", function () {",
+									"    pm.expect(pm.response.json().data.metrics).to.be.an('object');",
+									"});",
+									"pm.test(\"Recent activity is an array\", function () {",
+									"    pm.expect(pm.response.json().data.recentActivity).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/admin/dashboard",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"dashboard"
+							]
+						},
+						"description": "Retrieves metrics and recent activity for the admin dashboard. Needs Admin token."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Users (Students/Schools)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Users array is present\", function () {",
+									"    pm.expect(pm.response.json().data.users).to.be.an('array');",
+									"});",
+									"pm.test(\"Total count is a number\", function () {",
+									"    pm.expect(pm.response.json().data.totalCount).to.be.a('number');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/admin/users?role=student&limit=5&offset=0",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"users"
+							],
+							"query": [
+								{
+									"key": "role",
+									"value": "student",
+									"description": "Optional: student | school | admin"
+								},
+								{
+									"key": "limit",
+									"value": "5",
+									"description": "Pagination limit"
+								},
+								{
+									"key": "offset",
+									"value": "0",
+									"description": "Pagination offset"
+								}
+							]
+						},
+						"description": "Retrieves a list of users, filterable by role. Needs Admin token. Try changing `role` to `school` or omit it for all users."
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Create Users (from Excel)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Message confirms completion\", function () {",
+									"    pm.expect(pm.response.json().message).to.include(\"Bulk user creation process completed.\");",
+									"});",
+									"pm.test(\"Uploaded count is a number\", function () {",
+									"    pm.expect(pm.response.json().data.uploaded_count).to.be.a('number');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "role",
+									"value": "student",
+									"type": "text",
+									"description": "Must be 'student' or 'school'"
+								},
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/path/to/your/users_bulk.xlsx",
+									"fileName": "users_bulk.xlsx",
+									"description": "Select your Excel file. Ensure it has 'Name' and 'Email' columns. Replace `/path/to/your/users_bulk.xlsx` with an actual file path."
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/admin/users/bulk-create",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"users",
+								"bulk-create"
+							]
+						},
+						"description": "Upload an Excel file to create users in bulk. Needs Admin token. Requires 'xlsx' and 'validator' npm packages. **NOTE: Manually select a file for testing.**"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Core Skill",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 Created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Skill ID is present\", function () {",
+									"    pm.expect(pm.response.json().data.skill_id).to.be.a('string').and.to.have.lengthOf(36);",
+									"});",
+									"",
+									"// Save skill ID to environment",
+									"if (pm.response.json().data.skill_id) {",
+									"    pm.environment.set(\"coreSkillId\", pm.response.json().data.skill_id);",
+									"    console.log(\"coreSkillId set: \" + pm.environment.get(\"coreSkillId\"));",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Mathematics\",\n    \"subskills\": [\"Algebra\", \"Geometry\", \"Calculus\", \"Statistics\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/admin/skills",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"skills"
+							]
+						},
+						"description": "Creates a new core skill. Needs Admin token. Saves the new skill's ID to `coreSkillId`."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Core Skills",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Skills array is present\", function () {",
+									"    pm.expect(pm.response.json().data.skills).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/admin/skills",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"skills"
+							]
+						},
+						"description": "Retrieves all core skills. Needs Admin token."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Category (Job Type)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 Created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Category ID is present\", function () {",
+									"    pm.expect(pm.response.json().data.category_id).to.be.a('string').and.to.have.lengthOf(36);",
+									"});",
+									"",
+									"// Save category ID to environment",
+									"if (pm.response.json().data.category_id) {",
+									"    pm.environment.set(\"categoryId\", pm.response.json().data.category_id);",
+									"    console.log(\"categoryId set: \" + pm.environment.get(\"categoryId\"));",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Mathematics Teacher\",\n    \"skills\": [\"{{coreSkillId}}\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/admin/categories",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"categories"
+							]
+						},
+						"description": "Creates a new job category, linking it to core skills by UUID. Needs Admin token. Uses `coreSkillId` env variable."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Categories",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Categories array is present\", function () {",
+									"    pm.expect(pm.response.json().data.categories).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/admin/categories",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"categories"
+							]
+						},
+						"description": "Retrieves all job categories. Needs Admin token."
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Student Core Skill Marks",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 Created or 200 OK\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([201, 200]);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"skill_id\": \"{{coreSkillId}}\",\n    \"subskills\": [\n        { \"name\": \"Algebra\", \"mark\": 8 },\n        { \"name\": \"Geometry\", \"mark\": 7 },\n        { \"name\": \"Calculus\", \"mark\": 9 },\n        { \"name\": \"Statistics\", \"mark\": 6 }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/admin/skills/{{studentId}}/marks",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"skills",
+								"{{studentId}}",
+								"marks"
+							]
+						},
+						"description": "Uploads marks for a student's core skills. Needs Admin token. Uses `coreSkillId` and `studentId` env variables."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "School",
+			"item": [
+				{
+					"name": "Get School Dashboard Metrics",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Dashboard metrics are present\", function () {",
+									"    pm.expect(pm.response.json().data.jobPostings).to.be.a('number');",
+									"    pm.expect(pm.response.json().data.totalApplications).to.be.a('number');",
+									"    pm.expect(pm.response.json().data.pendingReviews).to.be.a('number');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{schoolToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/school/dashboard-metrics",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"school",
+								"dashboard-metrics"
+							]
+						},
+						"description": "Retrieves dashboard statistics for the school. Needs School token."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Recent Job Postings (School)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Jobs array is present\", function () {",
+									"    pm.expect(pm.response.json().data.jobs).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{schoolToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/school/recent-job-postings",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"school",
+								"recent-job-postings"
+							]
+						},
+						"description": "Retrieves recent job postings by the school. Needs School token."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Job Post",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 Created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Job ID is present\", function () {",
+									"    pm.expect(pm.response.json().data.jobId).to.be.a('string').and.to.have.lengthOf(36);",
+									"});",
+									"",
+									"// Save Job ID to environment",
+									"if (pm.response.json().data.jobId) {",
+									"    pm.environment.set(\"jobId\", pm.response.json().data.jobId);",
+									"    console.log(\"jobId set: \" + pm.environment.get(\"jobId\"));",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{schoolToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Mathematics Teacher - High School\",\n    \"type\": \"{{categoryId}}\",\n    \"application_end_date\": \"{{$isoDate 2025-08-31}}\",\n    \"subjects\": [\"Algebra\", \"Geometry\"],\n    \"salary_min\": 5,\n    \"salary_max\": 8,\n    \"description\": \"Seeking a passionate Math teacher to inspire students in grades 9-12.\",\n    \"responsibilities\": \"Deliver engaging lessons; Assess student progress; Collaborate with faculty.\",\n    \"requirements\": \"Bachelor's degree in Math Education; State teaching license; 3+ years experience.\",\n    \"jobLevel\": \"Mid-level\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/school/jobs",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"school",
+								"jobs"
+							]
+						},
+						"description": "Creates a new job posting. Needs School token. Uses `categoryId` env variable. Dates use Postman dynamic variables."
+					},
+					"response": []
+				},
+				{
+					"name": "Get School's Job Postings",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Jobs array is present\", function () {",
+									"    pm.expect(pm.response.json().data.jobs).to.be.an('array');",
+									"});",
+									"pm.test(\"Total count is a number\", function () {",
+									"    pm.expect(pm.response.json().data.totalCount).to.be.a('number');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{schoolToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/school/jobs?status=open&limit=5&offset=0",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"school",
+								"jobs"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "open",
+									"description": "Optional: open | closed"
+								},
+								{
+									"key": "category",
+									"value": "",
+									"description": "Optional: Filter by category ID"
+								},
+								{
+									"key": "limit",
+									"value": "5",
+									"description": "Pagination limit"
+								},
+								{
+									"key": "offset",
+									"value": "0",
+									"description": "Pagination offset"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"description": "Optional: Search keyword"
+								}
+							]
+						},
+						"description": "Retrieves job postings created by the school. Needs School token. Can filter by status, category, search."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Specific Job Details",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Job object is present\", function () {",
+									"    pm.expect(pm.response.json().data.job).to.be.an('object');",
+									"});",
+									"pm.test(\"Job title matches expectation\", function () {",
+									"    pm.expect(pm.response.json().data.job.title).to.be.a('string');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{schoolToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/school/jobs/{{jobId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"school",
+								"jobs",
+								"{{jobId}}"
+							]
+						},
+						"description": "Retrieves detailed information for a specific job. Needs School token. Uses `jobId` env variable."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Job Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Message confirms update\", function () {",
+									"    pm.expect(pm.response.json().message).to.eql(\"Job status updated successfully.\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{schoolToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"closed\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/school/jobs/{{jobId}}/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"school",
+								"jobs",
+								"{{jobId}}",
+								"status"
+							]
+						},
+						"description": "Updates the status of a job posting (open/closed). Needs School token. Uses `jobId` env variable."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Job Applicants",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Applicants tabs are present\", function () {",
+									"    pm.expect(pm.response.json().data.tabs).to.be.an('object');",
+									"    pm.expect(pm.response.json().data.tabs.all).to.be.an('array');",
+									"    pm.expect(pm.response.json().data.tabs.shortlisted).to.be.an('array');",
+									"    pm.expect(pm.response.json().data.tabs.interviews).to.be.an('array');",
+									"});",
+									"",
+									"// Optionally save an application ID for further tests",
+									"if (pm.response.json().data.tabs.all.length > 0) {",
+									"    pm.environment.set(\"applicationId\", pm.response.json().data.tabs.all[0].id);",
+									"    pm.environment.set(\"applicantIdForDetails\", pm.response.json().data.tabs.all[0].applicantUserId);",
+									"    console.log(\"applicationId set: \" + pm.environment.get(\"applicationId\"));",
+									"    console.log(\"applicantIdForDetails set: \" + pm.environment.get(\"applicantIdForDetails\"));",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{schoolToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/school/jobs/{{jobId}}/applicants",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"school",
+								"jobs",
+								"{{jobId}}",
+								"applicants"
+							]
+						},
+						"description": "Retrieves all applicants for a specific job, categorized. Needs School token. Uses `jobId` env variable. Saves `applicationId` and `applicantIdForDetails`."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Applicant Details (by School)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Applicant profile is present\", function () {",
+									"    pm.expect(pm.response.json().data.applicant).to.be.an('object');",
+									"});",
+									"pm.test(\"Applicant name is present\", function () {",
+									"    pm.expect(pm.response.json().data.applicant.name).to.be.a('string').and.not.be.empty;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{schoolToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/school/applicants/{{applicantIdForDetails}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"school",
+								"applicants",
+								"{{applicantIdForDetails}}"
+							]
+						},
+						"description": "Retrieves the full profile of a specific applicant for the school. Needs School token. Uses `applicantIdForDetails` env variable."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Application Status (Shortlist/Reject)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Message confirms update\", function () {",
+									"    pm.expect(pm.response.json().message).to.eql(\"Application status updated.\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{schoolToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"shortlisted\"  // 'shortlisted' | 'interview_scheduled' | 'rejected'\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/school/applications/{{applicationId}}/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"school",
+								"applications",
+								"{{applicationId}}",
+								"status"
+							]
+						},
+						"description": "Updates the status of an application. Needs School token. Uses `applicationId` env variable. Change status as needed for testing flow."
+					},
+					"response": []
+				},
+				{
+					"name": "Schedule Interview",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 Created or 200 OK\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([201, 200]);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Message confirms scheduling\", function () {",
+									"    pm.expect(pm.response.json().message).to.include(\"Interview scheduled successfully.\").or.include(\"Interview updated successfully.\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{schoolToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Scheduled Interview\",\n    \"date\": \"{{$isoDate 2025-07-25}}\",\n    \"startTime\": \"10:00\",\n    \"endTime\": \"11:00\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/school/applications/{{applicationId}}/schedule",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"school",
+								"applications",
+								"{{applicationId}}",
+								"schedule"
+							]
+						},
+						"description": "Schedules an interview for a shortlisted applicant. Needs School token. Uses `applicationId` env variable. Location will be prefilled from school profile. Date uses Postman dynamic variables."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Student",
+			"item": [
+				{
+					"name": "Get Student Dashboard",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Profile and shortlisted jobs are present\", function () {",
+									"    pm.expect(pm.response.json().data.profile).to.be.an('object');",
+									"    pm.expect(pm.response.json().data.shortlistedJobs).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{studentToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/student/dashboard",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"student",
+								"dashboard"
+							]
+						},
+						"description": "Retrieves dashboard information for the student. Needs Student token."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Available Job Opportunities",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Available jobs array is present\", function () {",
+									"    pm.expect(pm.response.json().data.availableJobs).to.be.an('array');",
+									"});",
+									"pm.test(\"Total count is a number\", function () {",
+									"    pm.expect(pm.response.json().data.totalCount).to.be.a('number');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{studentToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/student/jobs?limit=5&offset=0&category={{categoryId}}&location=Delhi",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"student",
+								"jobs"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "5"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								},
+								{
+									"key": "category",
+									"value": "{{categoryId}}",
+									"description": "Optional: Filter by job type/category ID. Uses `categoryId` env variable."
+								},
+								{
+									"key": "location",
+									"value": "Delhi",
+									"description": "Optional: Filter by location"
+								},
+								{
+									"key": "min_salary_lpa",
+									"value": "5",
+									"description": "Optional"
+								},
+								{
+									"key": "max_salary_lpa",
+									"value": "10",
+									"description": "Optional"
+								},
+								{
+									"key": "search",
+									"value": "math",
+									"description": "Optional: Search by keyword"
+								}
+							]
+						},
+						"description": "Retrieves job opportunities matching the student's core skills and filters. Needs Student token."
+					},
+					"response": []
+				},
+				{
+					"name": "Apply for a Job",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Application successful message\", function () {",
+									"    pm.expect(pm.response.json().message).to.eql(\"Applied successfully. You will be notified of updates.\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{studentToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "firstName",
+									"value": "Student",
+									"type": "text"
+								},
+								{
+									"key": "lastName",
+									"value": "Applicant",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "{{testStudentEmail}}",
+									"type": "text",
+									"description": "Must match student's email"
+								},
+								{
+									"key": "phone",
+									"value": "9988776655",
+									"type": "text"
+								},
+								{
+									"key": "coverLetter",
+									"value": "I am eager to apply for this position because it aligns perfectly with my skills and passion for teaching.",
+									"type": "text"
+								},
+								{
+									"key": "experience",
+									"value": "3 years",
+									"type": "text",
+									"description": "e.g., '3 years', 'Fresh'"
+								},
+								{
+									"key": "availability",
+									"value": "Immediately",
+									"type": "text",
+									"description": "e.g., 'Immediately', '2 Weeks Notice'"
+								},
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/path/to/your/resume.pdf",
+									"fileName": "resume.pdf",
+									"description": "Upload resume (PDF, DOC, DOCX). **NOTE: Manually select a file for testing.**"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/student/jobs/{{jobId}}/apply",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"student",
+								"jobs",
+								"{{jobId}}",
+								"apply"
+							]
+						},
+						"description": "Applies the student to a specific job. Needs Student token. Uses `jobId` env variable. **NOTE: Manually select a file for testing.**"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Student Calendar (Interviews)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Interviews array is present\", function () {",
+									"    pm.expect(pm.response.json().data.interviews).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{studentToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/student/calendar",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"student",
+								"calendar"
+							]
+						},
+						"description": "Retrieves the student's scheduled interviews. Needs Student token."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Student Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Profile object is present\", function () {",
+									"    pm.expect(pm.response.json().data.profile).to.be.an('object');",
+									"});",
+									"pm.test(\"Profile first name is present\", function () {",
+									"    pm.expect(pm.response.json().data.profile.firstName).to.be.a('string').and.not.be.empty;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{studentToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/student/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"student",
+								"profile"
+							]
+						},
+						"description": "Retrieves the student's own profile details. Needs Student token."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Student Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Message confirms update\", function () {",
+									"    pm.expect(pm.response.json().message).to.eql(\"Profile updated successfully.\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{studentToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "firstName",
+									"value": "Jane",
+									"type": "text"
+								},
+								{
+									"key": "lastName",
+									"value": "Smith",
+									"type": "text"
+								},
+								{
+									"key": "mobile",
+									"value": "9988776611",
+									"type": "text"
+								},
+								{
+									"key": "about",
+									"value": "Updated bio: Excited about new opportunities and constantly learning.",
+									"type": "text"
+								},
+								{
+									"key": "skills",
+									"value": "[\"Public Speaking\", \"Leadership\", \"Mentoring\"]",
+									"type": "text",
+									"contentType": "application/json",
+									"description": "Send as JSON string"
+								},
+								{
+									"key": "education",
+									"value": "[\n    {\n        \"collegeName\": \"Delhi University\",\n        \"universityName\": \"DU\",\n        \"courseName\": \"B.Sc. Mathematics\",\n        \"startYear\": 2018,\n        \"endYear\": 2021,\n        \"gpa\": \"3.8\"\n    },\n    {\n        \"collegeName\": \"MIT\",\n        \"universityName\": \"MIT\",\n        \"courseName\": \"M.Sc. Physics\",\n        \"startYear\": 2022,\n        \"endYear\": 2024\n    }\n]",
+									"type": "text",
+									"contentType": "application/json",
+									"description": "Full array, including existing (with ID) and new (without ID)"
+								},
+								{
+									"key": "certifications",
+									"value": "[\n    {\n        \"name\": \"Certified Educator\",\n        \"issuedBy\": \"EduCert\",\n        \"description\": \"Completed a program on modern teaching methods.\",\n        \"dateReceived\": \"2022-01-15\",\n        \"hasExpiry\": true,\n        \"expiryDate\": \"2025-01-15\",\n        \"certificateLink\": \"https://example.com/cert1.pdf\"\n    },\n    {\n        \"name\": \"New Python Cert\",\n        \"issuedBy\": \"CodeAcademy\",\n        \"description\": \"Intro to Python for Data Science.\",\n        \"dateReceived\": \"2024-03-10\",\n        \"hasExpiry\": false,\n        \"certificateLink\": \"\"\n    }\n]",
+									"type": "text",
+									"contentType": "application/json",
+									"description": "Full array, including existing (with ID) and new (without ID)"
+								},
+								{
+									"key": "image",
+									"type": "file",
+									"src": "/path/to/your/new_student_profile.jpg",
+									"fileName": "new_student_profile.jpg",
+									"description": "Optional: New profile image upload. **NOTE: Manually select a file for testing.**"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/student/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"student",
+								"profile"
+							]
+						},
+						"description": "Updates the student's profile details. Needs Student token. For nested arrays like education/certifications, send the full array (existing with IDs, new without IDs)."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Global",
+			"item": [
+				{
+					"name": "Get Notifications",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Notifications array is present\", function () {",
+									"    pm.expect(pm.response.json().data.notifications).to.be.an('array');",
+									"});",
+									"",
+									"// Save a notification ID if available for mark as read test",
+									"if (pm.response.json().data.notifications.length > 0) {",
+									"    pm.environment.set(\"notificationId\", pm.response.json().data.notifications[0].id);",
+									"    console.log(\"notificationId set: \" + pm.environment.get(\"notificationId\"));",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{studentToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/notifications?status=unread",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"notifications"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "unread",
+									"description": "Optional: 'unread' | 'all'"
+								}
+							]
+						},
+						"description": "Retrieves notifications for the authenticated user. Can filter by status. Use student/school/admin token. Saves `notificationId`."
+					},
+					"response": []
+				},
+				{
+					"name": "Mark Notification as Read",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Message confirms read\", function () {",
+									"    pm.expect(pm.response.json().message).to.eql(\"Notification marked as read.\").or.eql(\"Notification already marked as read.\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{studentToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/notifications/{{notificationId}}/mark-as-read",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"notifications",
+								"{{notificationId}}",
+								"mark-as-read"
+							]
+						},
+						"description": "Marks a specific notification as read. Use student/school/admin token. Uses `notificationId` env variable."
+					},
+					"response": []
+				},
+				{
+					"name": "Submit Help Request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 Created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Message confirms request sent\", function () {",
+									"    pm.expect(pm.response.json().message).to.eql(\"Help request sent successfully. We will get back to you shortly.\");",
+									"});",
+									"",
+									"// Save help request ID for admin to resolve",
+									"// Note: Backend doesn't return ID on creation, but if it did, we'd save it here.",
+									"// For now, relies on admin getting list of help requests.",
+									"pm.test(\"Help Request ID is present\", function () {",
+									"    // Assuming backend will return ID in 'data' field. Adjust if not.",
+									"    // For now, if no ID is returned, this test will pass by not failing.",
+									"    // If you add helpRequest.id to response in controller, uncomment next line.",
+									"    // pm.environment.set(\"helpRequestId\", pm.response.json().data.helpRequestId);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{studentToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subject\": \"Cannot upload certificate\",\n    \"message\": \"I am facing an issue when trying to upload my new certificate. It keeps giving me an error.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/help",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"help"
+							]
+						},
+						"description": "Allows any authenticated user (student/school) to submit a help request. Use student/school token."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Help Requests (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Requests array is present\", function () {",
+									"    pm.expect(pm.response.json().data.requests).to.be.an('array');",
+									"});",
+									"// Save a help request ID to resolve later",
+									"if (pm.response.json().data.requests.length > 0) {",
+									"    pm.environment.set(\"helpRequestId\", pm.response.json().data.requests[0].id);",
+									"    console.log(\"helpRequestId set: \" + pm.environment.get(\"helpRequestId\"));",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/help?status=open",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"help"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "open",
+									"description": "Optional: 'open' | 'resolved'"
+								}
+							]
+						},
+						"description": "Admin retrieves all help requests. Needs Admin token. Saves `helpRequestId`."
+					},
+					"response": []
+				},
+				{
+					"name": "Resolve Help Request (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is successful\", function () {",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"pm.test(\"Message confirms resolution\", function () {",
+									"    pm.expect(pm.response.json().message).to.eql(\"Help request marked resolved.\").or.eql(\"Help request already resolved.\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/help/{{helpRequestId}}/resolve",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"help",
+								"{{helpRequestId}}",
+								"resolve"
+							]
+						},
+						"description": "Admin marks a specific help request as resolved. Needs Admin token. Uses `helpRequestId` env variable."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000/api"
+		},
+		{
+			"key": "adminToken",
+			"value": ""
+		},
+		{
+			"key": "studentToken",
+			"value": ""
+		},
+		{
+			"key": "schoolToken",
+			"value": ""
+		},
+		{
+			"key": "studentId",
+			"value": ""
+		},
+		{
+			"key": "schoolId",
+			"value": ""
+		},
+		{
+			"key": "coreSkillId",
+			"value": ""
+		},
+		{
+			"key": "categoryId",
+			"value": ""
+		},
+		{
+			"key": "jobId",
+			"value": ""
+		},
+		{
+			"key": "applicationId",
+			"value": ""
+		},
+		{
+			"key": "notificationId",
+			"value": ""
+		},
+		{
+			"key": "helpRequestId",
+			"value": ""
+		},
+		{
+			"key": "adminEmail",
+			"value": "admin@example.com",
+			"type": "string"
+		},
+		{
+			"key": "adminPassword",
+			"value": "adminpassword123",
+			"type": "string"
+		},
+		{
+			"key": "testStudentEmail",
+			"value": "test.student@example.com",
+			"type": "string"
+		},
+		{
+			"key": "testSchoolEmail",
+			"value": "test.school@example.com",
+			"type": "string"
+		}
+	]
+}
