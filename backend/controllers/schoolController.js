@@ -7,6 +7,7 @@ const Application = require('../models/Application');
 const Student = require('../models/Student');
 const Interview = require('../models/Interview');
 const Notification = require('../models/Notification');
+const Category = require('../models/Category'); // Assuming Category is the model for job types/categories
 const { sendEmail } = require('../utils/emailService'); // To notify students about shortlisting/interviews
 const moment = require('moment'); // For date/time formatting and calculations
 
