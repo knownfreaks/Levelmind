@@ -45,14 +45,31 @@ const sendApplicationStatusNotification = async (studentId, jobTitle, status, in
 // @route   GET /api/school/dashboard-metrics
 // @access  School
 const getSchoolDashboardMetrics = async (req, res, next) => {
-  const { schoolId } = req.user.data; // schoolId from authMiddleware, assuming it attaches schoolId
+  // --- DEBUGGING START ---
+  console.log('DEBUG: Inside getSchoolDashboardMetrics');
+  console.log('DEBUG: req.user object:', req.user); // Log the entire req.user object
+  // --- DEBUGGING END ---
+
+  // Correctly extract the user ID from req.user
+  const userId = req.user ? req.user.id : null; // Get userId from req.user.id
+
+  if (!userId) {
+    // This scenario should ideally be caught by authMiddleware, but it's a safeguard.
+    console.error('ERROR: User ID is missing from req.user in getSchoolDashboardMetrics.');
+    return res.status(401).json({ success: false, message: 'Authentication failed: User ID not found in request. Please ensure you are logged in correctly.' });
+  }
+
+  console.log('DEBUG: Extracted userId:', userId); // Log the extracted userId
 
   try {
-    const school = await School.findOne({ where: { userId: req.user.id } });
+    // Find the School profile associated with this userId
+    const school = await School.findOne({ where: { userId: userId } }); // Use userId to find the school profile
+
     if (!school) {
-      return res.status(404).json({ success: false, message: 'School profile not found.' });
+      return res.status(404).json({ success: false, message: 'School profile not found for the authenticated user. Please complete your school onboarding.' });
     }
 
+    // Now use school.id to query jobs and applications related to this specific school profile
     const activeJobPostings = await Job.count({
       where: { schoolId: school.id, status: 'open' }
     });
@@ -86,10 +103,23 @@ const getSchoolDashboardMetrics = async (req, res, next) => {
 // @route   GET /api/school/recent-job-postings
 // @access  School
 const getRecentJobPostings = async (req, res, next) => {
-  const { schoolId } = req.user.data; // Assuming schoolId is directly on req.user.data after auth
+  // --- DEBUGGING START ---
+  console.log('DEBUG: Inside getRecentJobPostings');
+  console.log('DEBUG: req.user object:', req.user); // Log the entire req.user object
+  // --- DEBUGGING END ---
+
+  // Correctly extract the user ID from req.user
+  const userId = req.user ? req.user.id : null; // Get userId from req.user.id
+
+  if (!userId) {
+    console.error('ERROR: User ID is missing from req.user in getRecentJobPostings.');
+    return res.status(401).json({ success: false, message: 'Authentication failed: User ID not found.' });
+  }
+
+  console.log('DEBUG: Extracted userId:', userId); // Log the extracted userId
 
   try {
-    const school = await School.findOne({ where: { userId: req.user.id } });
+    const school = await School.findOne({ where: { userId: userId } }); // Use userId to find school profile
     if (!school) {
       return res.status(404).json({ success: false, message: 'School profile not found.' });
     }
@@ -383,8 +413,8 @@ const getJobApplicants = async (req, res, next) => {
         linkedin: null, // Not in our schema, add if needed
         status: app.status === 'applied' ? 'New Candidates' :
                 (app.status === 'shortlisted' ? 'In Progress' :
-                 (app.status === 'interview_scheduled' ? 'In Progress' :
-                  (app.status === 'rejected' ? 'Completed' : 'Unknown'))), // Map internal status to frontend tabs
+                (app.status === 'interview_scheduled' ? 'In Progress' :
+                (app.status === 'rejected' ? 'Completed' : 'Unknown'))), // Map internal status to frontend tabs
         date: moment(app.applicationDate).format('DD/MM/YYYY'),
         avatar: student.imageUrl,
         interviewDetails: app.interview ? {
@@ -650,3 +680,4 @@ module.exports = {
   scheduleInterview,
   getApplicantDetails
 };
+// Note: Ensure to import any additional models or utilities as needed for the above functions.

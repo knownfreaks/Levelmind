@@ -183,8 +183,8 @@ const completeOnboarding = async (req, res, next) => {
       }
 
       await studentProfile.update({
-        firstName: profileData.first_name,
-        lastName: profileData.last_name, // Assuming frontend sends `last_name` field. If it's `lastName`, adjust Joi/model.
+        firstName: profileData.firstName,
+        lastName: profileData.lastName, // Assuming frontend sends `last_name` field. If it's `lastName`, adjust Joi/model.
         mobile: profileData.mobile,
         about: profileData.about,
         imageUrl: filePath // Use uploaded path for the image
@@ -199,7 +199,8 @@ const completeOnboarding = async (req, res, next) => {
           universityName: edu.university_name,
           courseName: edu.course_name,
           startYear: edu.start_year,
-          endYear: edu.end_year
+          endYear: edu.end_year,
+          gpa: edu.gpa
         }));
         await Education.bulkCreate(educationEntries);
       }
