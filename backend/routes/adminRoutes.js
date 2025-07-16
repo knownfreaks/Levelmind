@@ -8,7 +8,10 @@ const {
   getCoreSkills,
   createCategory,
   getCategories,
-  uploadStudentCoreSkillMarks
+  uploadStudentCoreSkillMarks,
+  updateUserPasswordByAdmin,
+  // Import the new controller function for bulk skill marks
+  bulkUploadStudentCoreSkillMarks // <--- ADDED THIS LINE
 } = require('../controllers/adminController');
 const authMiddleware = require('../middleware/authMiddleware');
 const authorizeRoles = require('../middleware/roleMiddleware');
@@ -28,21 +31,24 @@ const excelStorage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    cb(null, `bulk_upload-${Date.now()}${path.extname(file.originalname)}`);
+    // Ensure filename is unique to prevent clashes
+    cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`);
   }
 });
 
 const uploadExcel = multer({
   storage: excelStorage,
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-        file.mimetype === 'application/vnd.ms-excel') {
+    if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || // .xlsx
+        file.mimetype === 'application/vnd.ms-excel' || // .xls
+        file.mimetype === 'text/csv' // Also allow CSV for flexibility
+        ) {
       cb(null, true);
     } else {
-      cb(new Error('Only Excel files (.xlsx, .xls) are allowed!'), false);
+      cb(new Error('Only Excel files (.xlsx, .xls) or CSV files (.csv) are allowed!'), false);
     }
   },
-  limits: { fileSize: 10 * 1024 * 1024 } // 10 MB limit for excel
+  limits: { fileSize: 10 * 1024 * 1024 } // 10 MB limit for excel/csv
 });
 
 
@@ -57,27 +63,35 @@ router.get('/dashboard', getAdminDashboard);
 
 // User Management
 router.get('/users', getUsers);
-// Note: Frontend wants POST /api/admin/users/bulk-create with file:excel. Role in body.
 router.post('/users/bulk-create', uploadExcel.single('file'), bulkCreateUsers);
+router.patch('/users/:id/password', validate(Joi.object({
+  newPassword: Joi.string()
+    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/)
+    .required()
+    .messages({
+      'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, one number, one special character, and be at least 8 characters long.',
+      'any.required': 'New password is required.'
+    })
+})), updateUserPasswordByAdmin);
 
 // Core Skill Management
-// Frontend expects POST /api/admin/skills with name and subskills
 router.post('/skills', validate(Joi.object({
   name: Joi.string().min(1).required(),
   subskills: Joi.array().items(Joi.string().min(1)).min(1).max(4).required()
-})), createCoreSkill); // Inline Joi validation for simple schema
+})), createCoreSkill);
 router.get('/skills', getCoreSkills);
 
+// New route for bulk uploading core skill marks
+router.post('/skills/:coreSkillId/bulk-marks-upload', uploadExcel.single('file'), bulkUploadStudentCoreSkillMarks); // <--- ADDED THIS ROUTE
+
 // Category Management
-// Frontend expects POST /api/admin/categories with name and skills (UUIDs)
 router.post('/categories', validate(Joi.object({
   name: Joi.string().min(1).required(),
-  skills: Joi.array().items(Joi.string().uuid()).optional().default([]) // Array of UUIDs for core skills
+  skills: Joi.array().items(Joi.string().uuid()).optional().default([])
 })), createCategory);
 router.get('/categories', getCategories);
 
-// Student Core Skill Assessment
-// Frontend expects POST /api/admin/skills/:studentId/marks with skill_id and subskills [{name, mark}]
+// Student Core Skill Assessment (single upload)
 router.post('/skills/:studentId/marks', validate(Joi.object({
   skill_id: Joi.string().uuid().required(),
   subskills: Joi.array().items(Joi.object({

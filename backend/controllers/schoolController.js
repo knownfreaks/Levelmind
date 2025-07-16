@@ -8,6 +8,10 @@ const Student = require('../models/Student');
 const Interview = require('../models/Interview');
 const Notification = require('../models/Notification');
 const Category = require('../models/Category'); // Assuming Category is the model for job types/categories
+const Education = require('../models/Education'); // Assuming Education is the model for student education details
+const CoreSkill = require('../models/CoreSkill');
+const StudentCoreSkillAssessment = require('../models/StudentCoreSkillAssessment');
+const Certification = require('../models/Certification'); // Assuming Certification is the model for student certifications
 const { sendEmail } = require('../utils/emailService'); // To notify students about shortlisting/interviews
 const moment = require('moment'); // For date/time formatting and calculations
 
@@ -511,7 +515,7 @@ const scheduleInterview = async (req, res, next) => {
   try {
     const school = await School.findOne({
       where: { userId },
-      attributes: ['address', 'city', 'state', 'pincode'] // Fetch school address for location
+      attributes: ['id', 'address', 'city', 'state', 'pincode'] // Fetch school address for location
     });
     if (!school) {
       return res.status(404).json({ success: false, message: 'School profile not found.' });

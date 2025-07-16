@@ -8,13 +8,13 @@ const StudentCoreSkillAssessment = require('../models/StudentCoreSkillAssessment
 const Category = require('../models/Category');
 const Notification = require('../models/Notification');
 const HelpRequest = require('../models/HelpRequest');
-const Job = require('../models/Job'); // <--- ADDED THIS IMPORT for 'ReferenceError: Job is not defined'
+const Job = require('../models/Job');
 const { hashPassword } = require('../utils/passwordUtils');
 const { sendEmail } = require('../utils/emailService');
 const path = require('path');
 const fs = require('fs');
-const xlsx = require('xlsx'); // For bulk upload functionality
-const validator = require('validator'); // For email validation in bulk upload
+const xlsx = require('xlsx'); // For Excel parsing
+const validator = require('validator'); // For email validation
 
 // Helper function to remove file if error occurs during bulk upload parsing
 const cleanupUploadedFile = (filePath) => {
@@ -33,10 +33,9 @@ const getAdminDashboard = async (req, res, next) => {
     const totalUsers = await User.count();
     const totalSchools = await User.count({ where: { role: 'school' } });
     const totalStudents = await User.count({ where: { role: 'student' } });
-    const activeJobs = await Job.count({ where: { status: 'open' } }); // Uses Job model
+    const activeJobs = await Job.count({ where: { status: 'open' } });
     const pendingHelpRequests = await HelpRequest.count({ where: { status: 'open' } });
 
-    // For recent activity, fetch latest help requests or user registrations
     const recentActivities = await Promise.all([
       HelpRequest.findAll({
         limit: 5,
@@ -55,15 +54,15 @@ const getAdminDashboard = async (req, res, next) => {
         text: `New help request from ${req.User.name} (${req.User.role}): "${req.subject.substring(0, 50)}..."`,
         type: 'info',
         timestamp: req.createdAt,
-        link: `/admin/help/${req.id}` // Frontend route for help request details
+        link: `/admin/help/${req.id}`
       })),
       ...recentActivities[1].map(user => ({
         text: `New ${user.role} registered: ${user.name} (${user.email})`,
         type: 'success',
         timestamp: user.createdAt,
-        link: `/admin/users?role=${user.role}` // Frontend route for user management
+        link: `/admin/users?role=${user.role}`
       }))
-    ].sort((a, b) => b.timestamp - a.timestamp).slice(0, 5); // Get overall 5 most recent
+    ].sort((a, b) => b.timestamp - a.timestamp).slice(0, 5);
 
     res.status(200).json({
       success: true,
@@ -212,8 +211,6 @@ const bulkCreateUsers = async (req, res, next) => {
           <p><strong>Temporary Password:</strong> ${tempPassword}</p>
           <p>Please log in <a href="${loginLink}">here</a> and complete your profile.</p>
         `;
-        // It's good practice to await emails only if necessary, or use a queue for bulk sends
-        // For local testing, awaiting is fine.
         await sendEmail(email, emailSubject, emailContent);
         successfulEmails.push(email);
         uploadedCount++;
@@ -244,6 +241,183 @@ const bulkCreateUsers = async (req, res, next) => {
     cleanupUploadedFile(filePath);
   }
 };
+
+// @desc    Admin changes a user's password
+// @route   PATCH /api/admin/users/:id/password
+// @access  Admin
+const updateUserPasswordByAdmin = async (req, res, next) => {
+  const { id } = req.params; // User ID to update
+  const { newPassword } = req.body; // New password from the request body
+
+  try {
+    const user = await User.findByPk(id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    // Hash the new password
+    const hashedPassword = await hashPassword(newPassword);
+
+    // Update the user's password
+    user.password = hashedPassword;
+    await user.save();
+
+    // Optionally, send an email notification to the user about the password change
+    const emailSubject = 'Your Password Has Been Changed by an Administrator';
+    const emailContent = `
+      <h1>Password Change Notification</h1>
+      <p>Dear ${user.name},</p>
+      <p>Your password for the Levelminds platform has been reset by an administrator.</p>
+      <p>Your new password is: <strong>${newPassword}</strong></p>
+      <p>For security reasons, we recommend logging in and changing this temporary password immediately.</p>
+      <p>If you did not request this change or have any concerns, please contact support.</p>
+      <p>Thank you,</p>
+      <p>The Levelminds Team</p>
+    `;
+    await sendEmail(user.email, emailSubject, emailContent);
+
+
+    res.status(200).json({
+      success: true,
+      message: 'User password updated successfully and notification sent.'
+    });
+
+  } catch (error) {
+    console.error('Error updating user password by admin:', error);
+    next(error);
+  }
+};
+
+
+// @desc    Bulk uploads core skill marks for students from an Excel file.
+// @route   POST /api/admin/skills/:coreSkillId/bulk-marks-upload
+// @access  Admin
+const bulkUploadStudentCoreSkillMarks = async (req, res, next) => {
+  const { coreSkillId } = req.params; // Get the ID of the core skill being assessed
+
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'No file uploaded. Please upload an Excel or CSV file.' });
+  }
+
+  const filePath = req.file.path;
+  let workbook;
+  let data;
+  try {
+    workbook = xlsx.readFile(filePath);
+    const sheetNameList = workbook.SheetNames;
+    data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetNameList[0]]); // Read data from the first sheet
+  } catch (parseError) {
+    cleanupUploadedFile(filePath);
+    return res.status(400).json({ success: false, message: 'Failed to parse file. Ensure it is a valid Excel (.xlsx, .xls) or CSV (.csv) format.' });
+  }
+
+  let uploadedCount = 0;
+  let failedCount = 0;
+  const failedDetails = [];
+  const successfulUpdates = [];
+
+  try {
+    // 1. Verify the core skill exists and get its subskills
+    const coreSkill = await CoreSkill.findByPk(coreSkillId);
+    if (!coreSkill) {
+      cleanupUploadedFile(filePath);
+      return res.status(404).json({ success: false, message: 'Core skill not found for the provided ID.' });
+    }
+    const definedSubSkills = new Set(coreSkill.subSkills); // For quick lookup of valid subskill names
+
+    // 2. Process each row from the Excel/CSV data
+    for (const row of data) {
+      const studentEmail = row.Email || row.email; // Assuming column named 'Email' or 'email'
+      const studentNameInFile = row.Name || row.name; // Assuming column named 'Name' or 'name'
+
+      if (!studentEmail || !validator.isEmail(studentEmail)) {
+        failedCount++;
+        failedDetails.push({ row: row, reason: 'Missing or invalid student email.' });
+        continue;
+      }
+
+      try {
+        // Find the user and student profile
+        const user = await User.findOne({ where: { email: studentEmail } });
+        if (!user || user.role !== 'student') {
+          failedCount++;
+          failedDetails.push({ email: studentEmail, reason: 'User not found or is not a student profile.' });
+          continue;
+        }
+
+        const student = await Student.findOne({ where: { userId: user.id } });
+        if (!student) {
+          failedCount++;
+          failedDetails.push({ email: studentEmail, reason: 'Student profile not found for this user (incomplete onboarding?).' });
+          continue;
+        }
+
+        const subSkillMarks = {};
+        let rowHasValidMarks = false;
+
+        // Collect subskill marks from the row
+        for (const subName of coreSkill.subSkills) {
+          const mark = row[subName]; // Column name must match subskill name (e.g., 'Algebra', 'Geometry')
+          if (mark !== undefined && typeof mark === 'number' && mark >= 0 && mark <= 10) {
+            subSkillMarks[subName] = mark;
+            rowHasValidMarks = true;
+          } else if (mark !== undefined && typeof mark !== 'number') {
+             // Handle cases where mark is present but not a number (e.g., text)
+             // We can ignore this error for individual row processing if other valid marks are found
+             console.warn(`Warning: Invalid mark type for subskill '${subName}' for student ${studentEmail}. Value: ${mark}`);
+          }
+          // If mark is undefined, it means the column wasn't in the Excel or was empty.
+          // Joi requires *all* subskills to be provided if we were doing strict validation on the JSON input.
+          // Here, we only add if present and valid.
+        }
+
+        if (!rowHasValidMarks || Object.keys(subSkillMarks).length !== coreSkill.subSkills.length) {
+            failedCount++;
+            failedDetails.push({ email: studentEmail, reason: 'No valid marks or not all defined subskills found in the row for this core skill.' });
+            continue;
+        }
+
+        // Create or update the assessment for this student and core skill
+        const [assessment, created] = await StudentCoreSkillAssessment.findOrCreate({
+          where: { studentId: student.id, coreSkillId: coreSkill.id },
+          defaults: { subSkillMarks: subSkillMarks }
+        });
+
+        if (!created) {
+          await assessment.update({ subSkillMarks: subSkillMarks });
+        }
+        successfulUpdates.push(studentEmail);
+        uploadedCount++;
+
+      } catch (innerError) {
+        console.error(`Error processing row for email ${studentEmail}:`, innerError.message);
+        failedCount++;
+        failedDetails.push({ email: studentEmail, reason: `Processing error: ${innerError.message}` });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Bulk upload for core skill marks completed. Successfully updated ${uploadedCount} student profiles.`,
+      data: {
+        coreSkillName: coreSkill.name,
+        uploaded_count: uploadedCount,
+        failed_count: failedCount,
+        failed_details: failedDetails,
+        successful_updates: successfulUpdates
+      }
+    });
+
+  } catch (error) {
+    console.error('Bulk core skill marks upload fatal error:', error);
+    next(error);
+  } finally {
+    // Always clean up the uploaded file
+    cleanupUploadedFile(filePath);
+  }
+};
+
 
 // @desc    Create a new core skill
 // @route   POST /api/admin/skills
@@ -281,8 +455,6 @@ const getCoreSkills = async (req, res, next) => {
       order: [['name', 'ASC']]
     });
 
-    // Optionally, include details of associated core skills for 'categoryPreview'
-    // This requires fetching CoreSkills by their IDs
     const categoriesWithSkills = await Promise.all(coreSkills.map(async (skill) => {
       return {
         id: skill.id,
@@ -458,5 +630,7 @@ module.exports = {
   getCoreSkills,
   createCategory,
   getCategories,
-  uploadStudentCoreSkillMarks
+  uploadStudentCoreSkillMarks,
+  bulkUploadStudentCoreSkillMarks, // <--- ADDED THIS EXPORT
+  updateUserPasswordByAdmin
 };

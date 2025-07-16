@@ -1,6 +1,7 @@
-// middleware/validationMiddleware.js
+// C:\Users\rog\OneDrive\Documents\levelminds\Levelminds\backend\middleware\validationMiddleware.js
+
 const Joi = require('joi');
-const fs = require('fs'); // For deleting files on validation error
+const fs = require('fs');
 const path = require('path');
 
 // Helper function for general validation (JSON body)
@@ -37,21 +38,21 @@ const authSchemas = {
   }),
 
   studentOnboarding: Joi.object({
-    first_name: Joi.string().min(1).required(),
-    last_name: Joi.string().min(1).required(), // As per frontend request { "FName", "Lname" }
+    firstName: Joi.string().min(1).required(), // <-- Corrected: firstName
+    lastName: Joi.string().min(1).required(),   // <-- Corrected: lastName
     mobile: Joi.string().pattern(/^[0-9]{10}$/).required().messages({
       'string.pattern.base': 'Mobile number must be 10 digits',
       'string.empty': 'Mobile number is required',
       'any.required': 'Mobile number is required'
     }),
     about: Joi.string().optional().allow(''),
-    // imageUrl is handled by multer and populated by backend, not directly validated here from client
     education: Joi.array().items(Joi.object({
       college_name: Joi.string().required(),
       university_name: Joi.string().optional().allow(''),
       course_name: Joi.string().required(),
       start_year: Joi.number().integer().min(1900).max(new Date().getFullYear()).required(),
-      end_year: Joi.number().integer().min(Joi.ref('start_year')).max(new Date().getFullYear() + 5).optional().allow(null)
+      end_year: Joi.number().integer().min(Joi.ref('start_year')).max(new Date().getFullYear() + 5).optional().allow(null),
+      gpa: Joi.string().optional().allow('') // <-- THIS IS THE CRITICAL LINE
     })).optional(),
     certifications: Joi.array().items(Joi.object({
       name: Joi.string().required(),
@@ -64,7 +65,7 @@ const authSchemas = {
         then: Joi.required(),
         otherwise: Joi.optional()
       }),
-      certificate_link: Joi.string().uri().optional().allow('') // For external links for certificates
+      certificate_link: Joi.string().uri().optional().allow('')
     })).optional(),
     skills: Joi.array().items(Joi.string().max(20)).max(12).optional().default([])
   }),
@@ -72,7 +73,6 @@ const authSchemas = {
   schoolOnboarding: Joi.object({
     bio: Joi.string().optional().allow(''),
     website_link: Joi.string().uri().optional().allow(''),
-    // logoUrl is handled by multer and populated by backend, not directly validated here from client
     address: Joi.object({
       address: Joi.string().required(),
       city: Joi.string().required(),
@@ -86,12 +86,10 @@ const authSchemas = {
   })
 };
 
-
 // --- Joi Schemas for Jobs & Applications (School) ---
 const jobSchemas = {
   createJob: Joi.object({
     title: Joi.string().min(1).required(),
-    // location is prefilled by backend from school profile
     type: Joi.string().uuid().required(), // Category ID
     application_end_date: Joi.date().iso().min(new Date().toISOString().split('T')[0]).required().messages({
         'date.min': 'Application end date must be today or in the future',
@@ -128,7 +126,6 @@ const jobSchemas = {
   })
 };
 
-
 // --- Joi Schemas for Student ---
 const studentSchemas = {
   applyForJob: Joi.object({
@@ -141,8 +138,7 @@ const studentSchemas = {
     }),
     coverLetter: Joi.string().min(1).required(),
     experience: Joi.string().optional().allow(''), // e.g., "3 years", "Fresh"
-    availability: Joi.string().optional().allow(''), // e.g., "Immediately"
-    // file (resume) is handled by multer, not validated by Joi here
+    availability: Joi.string().optional().allow('') // e.g., "Immediately"
   }),
 
   updateProfile: Joi.object({
@@ -152,30 +148,29 @@ const studentSchemas = {
         'string.pattern.base': 'Mobile number must be 10 digits'
     }),
     about: Joi.string().optional().allow(''),
-    imageUrl: Joi.string().uri().optional().allow(null, ''), // Allow URL directly if updating without file
-    // Nested arrays for update (allowing partial updates)
+    imageUrl: Joi.string().uri().optional().allow(null, ''),
     education: Joi.array().items(Joi.object({
-      id: Joi.string().uuid().optional(), // ID for existing entry to update/delete
-      collegeName: Joi.string().required(), // Frontend uses college_name/university_name etc. Ensure consistent mapping.
+      id: Joi.string().uuid().optional(),
+      collegeName: Joi.string().required(),
       universityName: Joi.string().optional().allow(''),
       courseName: Joi.string().required(),
       startYear: Joi.number().integer().min(1900).max(new Date().getFullYear()).required(),
       endYear: Joi.number().integer().min(Joi.ref('startYear')).max(new Date().getFullYear() + 5).optional().allow(null),
-      gpa: Joi.string().optional().allow('') // New field for education in profile
+      gpa: Joi.string().optional().allow('') // <-- This is also updated here for PATCH /student/profile
     })).optional().default([]),
     certifications: Joi.array().items(Joi.object({
-      id: Joi.string().uuid().optional(), // ID for existing entry
+      id: Joi.string().uuid().optional(),
       name: Joi.string().required(),
       issuedBy: Joi.string().required(),
       description: Joi.string().optional().allow(''),
       dateReceived: Joi.date().iso().required(),
       hasExpiry: Joi.boolean().required(),
-      expiryDate: Joi.date().iso().allow(null).when('hasExpiry', { // Frontend used has_expiry, date_received etc.
+      expiryDate: Joi.date().iso().allow(null).when('hasExpiry', {
         is: true,
         then: Joi.required(),
         otherwise: Joi.optional()
       }),
-      certificateLink: Joi.string().uri().optional().allow('') // For external links
+      certificateLink: Joi.string().uri().optional().allow('')
     })).optional().default([]),
     skills: Joi.array().items(Joi.string().max(20)).max(12).optional().default([])
   })
@@ -196,7 +191,6 @@ const validateOnboarding = (req, res, next) => {
 
   let parsedProfileData;
   try {
-    // Attempt to parse profileData field from multipart form.
     parsedProfileData = JSON.parse(req.body.profileData);
   } catch (parseError) {
     if (req.file) { // Clean up uploaded file if parsing failed
@@ -220,6 +214,10 @@ const validateOnboarding = (req, res, next) => {
     }
     return res.status(403).json({ success: false, message: 'Onboarding is only for student or school roles.' });
   }
+
+  // --- DEBUGGING LINE ---
+  console.log('DEBUG: Onboarding Schema being used:', JSON.stringify(schema.describe(), null, 2));
+  // --- END DEBUGGING LINE ---
 
   const { error } = schema.validate(parsedProfileData, { abortEarly: false });
   if (error) {
@@ -245,6 +243,6 @@ module.exports = {
   authSchemas,
   jobSchemas,
   studentSchemas,
-  helpdeskSchemas, // Export new schemas
+  helpdeskSchemas,
   validateOnboarding
 };
