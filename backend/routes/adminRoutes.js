@@ -92,7 +92,7 @@ router.post('/categories', validate(Joi.object({
 router.get('/categories', getCategories);
 
 // Student Core Skill Assessment (single upload)
-router.post('/skills/:studentId/marks', validate(Joi.object({
+router.post('/skills/:userId/marks', validate(Joi.object({
   skill_id: Joi.string().uuid().required(),
   subskills: Joi.array().items(Joi.object({
     name: Joi.string().min(1).required(),
@@ -102,3 +102,4 @@ router.post('/skills/:studentId/marks', validate(Joi.object({
 
 
 module.exports = router;
+
