@@ -204,7 +204,7 @@ const bulkCreateUsers = async (req, res, next) => {
         const loginLink = `${req.protocol}://${req.get('host')}/login`;
         const emailSubject = role === 'student' ? 'Your Student Account Details' : 'Your School Account Details';
         const emailContent = `
-          <h1>Welcome to the Recruitment Platform!</h1>
+          <h1>Welcome to Levelminds!</h1>
           <p>A ${role} profile has been created for you/your institution by the admin.</p>
           <p>Your login details are:</p>
           <p><strong>Email:</strong> ${email}</p>
