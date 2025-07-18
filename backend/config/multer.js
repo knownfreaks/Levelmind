@@ -1,92 +1,95 @@
-// config/multer.js
+// backend/config/multer.js
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Define storage for profile images (existing)
+// Ensure the main 'uploads' directory exists
+const uploadsDir = path.join(__dirname, '../uploads');
+fs.mkdirSync(uploadsDir, { recursive: true }); // Ensure this top-level directory exists
+
+// Define storage for different types of uploads
 const profileStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, '../uploads/profiles');
-    fs.mkdirSync(uploadPath, { recursive: true });
-    cb(null, uploadPath);
+    const dir = path.join(uploadsDir, 'profiles'); // Use uploadsDir constant
+    fs.mkdirSync(dir, { recursive: true }); // Ensure subdirectory exists
+    cb(null, dir);
   },
   filename: (req, file, cb) => {
-    cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`);
+    // filename: profile-<timestamp>.<ext>
+    cb(null, `profile-${Date.now()}${path.extname(file.originalname)}`);
   }
 });
 
-// Define storage for certificates (existing)
-const certificateStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, '../uploads/certificates');
-    fs.mkdirSync(uploadPath, { recursive: true });
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`);
-  }
-});
-
-// NEW: Define storage for resumes/documents (e.g., DOC, DOCX, PDF)
 const resumeStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, '../uploads/resumes');
-    fs.mkdirSync(uploadPath, { recursive: true });
-    cb(null, uploadPath);
+    const dir = path.join(uploadsDir, 'resumes'); // Use uploadsDir constant
+    fs.mkdirSync(dir, { recursive: true }); // Ensure subdirectory exists
+    cb(null, dir);
   },
   filename: (req, file, cb) => {
-    cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`);
+    // filename: resume-<timestamp>.<ext>
+    cb(null, `resume-${Date.now()}${path.extname(file.originalname)}`);
   }
 });
 
-
-// File filter for images (existing)
-const imageFilter = (req, file, cb) => {
-  if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/i)) {
-    return cb(new Error('Only image files (jpg, jpeg, png, gif) are allowed!'), false);
+const certificateStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(uploadsDir, 'certificates'); // Use uploadsDir constant
+    fs.mkdirSync(dir, { recursive: true }); // Ensure subdirectory exists
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    // filename: certificate-<timestamp>.<ext>
+    cb(null, `certificate-${Date.now()}${path.extname(file.originalname)}`);
   }
-  cb(null, true);
-};
+});
 
-// File filter for certificates (existing)
-const certificateFilter = (req, file, cb) => {
-  if (!file.originalname.match(/\.(pdf|jpg|jpeg|png)$/i)) {
-    return cb(new Error('Only PDF, JPG, JPEG, PNG files are allowed for certificates!'), false);
-  }
-  cb(null, true);
-};
-
-// NEW: File filter for resumes (PDF, DOC, DOCX)
-const resumeFilter = (req, file, cb) => {
-  if (!file.originalname.match(/\.(pdf|doc|docx)$/i)) {
-    return cb(new Error('Only PDF, DOC, DOCX files are allowed for resumes!'), false);
-  }
-  cb(null, true);
-};
-
-
-// Multer instances for different upload types (existing)
+// Multer instances for specific upload types
 const uploadProfileImage = multer({
   storage: profileStorage,
-  fileFilter: imageFilter,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5 MB limit
+  fileFilter: (req, file, cb) => {
+    // Use mimetype.startsWith for more robust image type checking
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files (JPG, JPEG, PNG, GIF) are allowed for profile pictures!'), false);
+    }
+  },
+  limits: { fileSize: 2 * 1024 * 1024 } // 2MB limit (Common for profile images)
+});
+
+const uploadResume = multer({
+  storage: resumeStorage,
+  fileFilter: (req, file, cb) => {
+    // Check for common PDF, DOC, DOCX mimetypes
+    if (file.mimetype === 'application/pdf' ||
+        file.mimetype === 'application/msword' || // .doc
+        file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' // .docx
+    ) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF, DOC, or DOCX files are allowed for resumes!'), false);
+    }
+  },
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
 const uploadCertificate = multer({
   storage: certificateStorage,
-  fileFilter: certificateFilter,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10 MB limit
+  fileFilter: (req, file, cb) => {
+    // Allow images or PDF for certificates
+    if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image (JPG, JPEG, PNG, GIF) or PDF files are allowed for certificates!'), false);
+    }
+  },
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
-// NEW: Multer instance for resume upload
-const uploadResume = multer({
-  storage: resumeStorage,
-  fileFilter: resumeFilter,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10 MB limit for resumes
-});
-
+// Export all configured multer instances
 module.exports = {
   uploadProfileImage,
-  uploadCertificate,
-  uploadResume // Export new multer instance
+  uploadResume,
+  uploadCertificate
 };

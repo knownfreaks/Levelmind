@@ -62,6 +62,8 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const helpdeskRoutes = require('./routes/helpdeskRoutes');
 // const publicJobRoutes = require('./routes/publicJobRoutes'); // If you have this file, keep it
 const sharedAdminRoutes = require('./routes/sharedAdminRoutes'); // <--- ADDED THIS IMPORT
+const uploadRoutes = require('./routes/uploadRoutes');
+
 
 app.use('/api/auth', authRoutes);
 app.use('/api/school', schoolRoutes);
@@ -75,6 +77,7 @@ app.use('/api/help', helpdeskRoutes);
 // Or, if sharedAdminRoutes handles full paths like '/admin/categories', mount it here.
 app.use('/api', sharedAdminRoutes); // <--- ADDED THIS LINE: This router handles '/admin/categories'
 app.use('/api/admin', adminRoutes); // This router handles all other '/admin/*' routes (admin-only)
+app.use('/api/upload', uploadRoutes);
 
 
 // --- Error Handling Middleware (Keep this as the last middleware) ---
