@@ -424,7 +424,7 @@ const getJobApplicants = async (req, res, next) => {
                 (app.status === 'rejected' ? 'Completed' : 'Unknown'))), // Map internal status to frontend tabs
         date: moment(app.applicationDate).format('DD/MM/YYYY'),
         avatar: student.imageUrl ? `${STATIC_FILES_BASE_URL}/profiles/${path.basename(student.imageUrl)}` : null, // Profile image URL
-        skills: student.skills.slice(0, 3), // Top 3 skills for preview
+        //skills: student.skills.slice(0, 3), // Top 3 skills for preview
         interviewDetails: app.interview ? {
           date: moment(app.interview.date).format('YYYY-MM-DD'),
           startTime: app.interview.startTime,
