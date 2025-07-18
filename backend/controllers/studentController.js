@@ -13,6 +13,10 @@ const Education = require('../models/Education');
 const Certification = require('../models/Certification');
 const Notification = require('../models/Notification');
 const moment = require('moment'); // For date/time formatting and calculations
+const path = require('path'); // Needed for path.basename <--- ENSURE THIS IS PRESENT
+
+// New constant for static files base URL
+const STATIC_FILES_BASE_URL = process.env.STATIC_FILES_BASE_URL;
 
 // @desc    Get student dashboard data
 // @route   GET /api/student/dashboard
@@ -61,15 +65,16 @@ const getStudentDashboard = async (req, res, next) => {
       location: app.Job.location,
       jobType: app.Job.jobType ? app.Job.jobType.name : null,
       salary: app.Job.minSalaryLPA + (app.Job.maxSalaryLPA ? `-${app.Job.maxSalaryLPA}` : '') + ' LPA',
-      postedAgo: moment(app.Job.createdAt).fromNow(), // Assuming Job has createdAt
-      status: app.status === 'shortlisted' ? 'Shortlisted' : 'Interview Scheduled', // Map application status
+      postedAgo: moment(app.Job.createdAt).fromNow(),
+      status: app.status === 'shortlisted' ? 'Shortlisted' : 'Interview Scheduled',
       description: app.Job.jobDescription.substring(0, 100) + '...',
-      logo: app.Job.School.logoUrl
+      // Correctly format logoUrl using STATIC_FILES_BASE_URL
+      logo: app.Job.School.logoUrl ? `${STATIC_FILES_BASE_URL}/profiles/${path.basename(app.Job.School.logoUrl)}` : null // <--- CORRECTED
     }));
 
     const formattedCoreSkillsSummary = student.coreSkillAssessments.map(assessment => ({
       name: assessment.CoreSkill.name,
-      totalScore: assessment.totalScore, // Virtual field
+      totalScore: assessment.totalScore,
       maxScore: assessment.CoreSkill.subSkills.length * 10
     }));
 
@@ -81,8 +86,8 @@ const getStudentDashboard = async (req, res, next) => {
 
     const formattedRecentActivities = recentActivities.map(notif => ({
         text: notif.message,
-        type: notif.type, // 'success' | 'error' | 'info'
-        timestamp: notif.createdAt // Use for sorting if needed
+        type: notif.type,
+        timestamp: notif.createdAt
     }));
 
 
@@ -93,8 +98,9 @@ const getStudentDashboard = async (req, res, next) => {
         profile: {
           name: student.firstName ? `${student.firstName} ${student.lastName}` : student.User.name,
           email: student.User.email,
-          photo: student.imageUrl,
-          topSkills: student.skills.slice(0, 3), // Show top 3 user-added skills
+          // Correctly format imageUrl for student's own photo
+          photo: student.imageUrl ? `${STATIC_FILES_BASE_URL}/profiles/${path.basename(student.imageUrl)}` : null, // <--- CORRECTED
+          topSkills: student.skills.slice(0, 3),
           recentActivities: formattedRecentActivities,
           coreSkillsSummary: formattedCoreSkillsSummary,
         },
@@ -133,7 +139,6 @@ const getAvailableJobs = async (req, res, next) => {
 
     const studentCoreSkillIds = student.coreSkillAssessments.map(s => s.CoreSkill.id);
 
-    // Find categories that include any of the student's core skills
     const matchingCategories = await Category.findAll({
       where: {
         coreSkillIds: { [Op.contains]: studentCoreSkillIds }
@@ -145,12 +150,12 @@ const getAvailableJobs = async (req, res, next) => {
 
     let whereClause = {
       status: 'open',
-      applicationEndDate: { [Op.gte]: moment().format('YYYY-MM-DD') }, // Only open jobs with future end date
-      categoryId: { [Op.in]: matchingCategoryIds } // Job matching logic
+      applicationEndDate: { [Op.gte]: moment().format('YYYY-MM-DD') },
+      categoryId: { [Op.in]: matchingCategoryIds }
     };
 
     if (category) {
-      whereClause.categoryId = category; // Filter by specific category if provided
+      whereClause.categoryId = category;
     }
     if (min_salary_lpa) {
       whereClause.minSalaryLPA = { [Op.gte]: parseFloat(min_salary_lpa) };
@@ -184,7 +189,8 @@ const getAvailableJobs = async (req, res, next) => {
 
     const formattedJobs = jobs.map(job => ({
       id: job.id,
-      school_logo: job.School.logoUrl,
+      // Correctly format school_logo using STATIC_FILES_BASE_URL
+      school_logo: job.School.logoUrl ? `${STATIC_FILES_BASE_URL}/profiles/${path.basename(job.School.logoUrl)}` : null, // <--- CORRECTED
       title: job.title,
       school_name: job.School.User.name,
       school_address: `${job.School.address}, ${job.School.city}, ${job.School.state}, ${job.School.pincode}`,
@@ -226,6 +232,7 @@ const applyForJob = async (req, res, next) => {
     firstName, middleName, lastName, email, phone,
     coverLetter, experience, availability
   } = req.body;
+  // resumeUrl is stored as a relative path by multer, no need to prepend STATIC_FILES_BASE_URL here
   const resumeUrl = req.file ? `/uploads/resumes/${req.file.filename}` : null;
 
   try {
@@ -243,7 +250,6 @@ const applyForJob = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Applications for this job are closed.' });
     }
 
-    // Check if already applied
     const existingApplication = await Application.findOne({
       where: { studentId: student.id, jobId }
     });
@@ -257,18 +263,17 @@ const applyForJob = async (req, res, next) => {
       coverLetter,
       experience,
       availability,
-      resumeUrl,
+      resumeUrl, // This is the relative path stored in DB
       applicationDate: moment().format('YYYY-MM-DD'),
-      status: 'applied' // Initial status
+      status: 'applied'
     });
 
-    // Notify the school about the new application
     if (job.School && job.School.User) {
         await Notification.create({
             userId: job.School.User.id,
             message: `A new student (${student.firstName} ${student.lastName}) applied to your '${job.title}' job.`,
             type: 'info',
-            link: `/school/jobs/${job.id}/applicants` // Link to school's applicant management page
+            link: `/school/jobs/${job.id}/applicants`
         });
     }
 
@@ -280,7 +285,6 @@ const applyForJob = async (req, res, next) => {
 
   } catch (error) {
     console.error('Error applying for job:', error);
-    // Clean up uploaded resume if an error occurs
     if (resumeUrl && fs.existsSync(path.join(__dirname, '..', resumeUrl))) {
       fs.unlink(path.join(__dirname, '..', resumeUrl), (err) => {
         if (err) console.error('Error deleting uploaded resume after application error:', err);
@@ -295,7 +299,6 @@ const applyForJob = async (req, res, next) => {
 // @access  Student
 const getStudentCalendar = async (req, res, next) => {
   const { id: userId } = req.user;
-  // const { start_date, end_date } = req.query; // Optional filters
 
   try {
     const student = await Student.findOne({ where: { userId } });
@@ -304,9 +307,6 @@ const getStudentCalendar = async (req, res, next) => {
     }
 
     let whereClause = { studentId: student.id, status: 'interview_scheduled' };
-    // if (start_date && end_date) {
-    //   whereClause.date = { [Op.between]: [start_date, end_date] };
-    // }
 
     const interviews = await Application.findAll({
       where: whereClause,
@@ -380,19 +380,19 @@ const getStudentProfile = async (req, res, next) => {
     });
 
     const formattedCertifications = student.certifications.map(cert => ({
-      id: cert.id, // Include ID for frontend to manage updates/deletes
+      id: cert.id,
       name: cert.name,
       issuedBy: cert.issuedBy,
       description: cert.description,
       dateReceived: cert.dateReceived,
       hasExpiry: cert.hasExpiry,
       expiryDate: cert.expiryDate,
-      certificateLink: cert.certificateLink,
+      certificateLink: cert.certificateLink ? `${STATIC_FILES_BASE_URL}/certificates/${path.basename(cert.certificateLink)}` : null,
       status: cert.hasExpiry && moment(cert.expiryDate).isBefore(moment()) ? 'Expired' : 'Active'
     }));
 
     const formattedEducation = student.educations.map(edu => ({
-      id: edu.id, // Include ID for frontend to manage updates/deletes
+      id: edu.id,
       collegeName: edu.collegeName,
       universityName: edu.universityName,
       courseName: edu.courseName,
@@ -411,13 +411,12 @@ const getStudentProfile = async (req, res, next) => {
           email: user.email,
           mobile: student.mobile,
           about: student.about,
-          imageUrl: student.imageUrl,
+          imageUrl: student.imageUrl ? `${STATIC_FILES_BASE_URL}/profiles/${path.basename(student.imageUrl)}` : null,
+          resumeUrl: student.resumeUrl ? `${STATIC_FILES_BASE_URL}/resumes/${path.basename(student.resumeUrl)}` : null,
           education: formattedEducation,
           certifications: formattedCertifications,
-          skills: student.skills, // User-added skills
-          core_skills: formattedCoreSkills, // Admin-added core skills
-          // Frontend fields like 'subject_expertise', 'position', 'location' can be derived or added if needed
-          // For now, mapping directly from schema.
+          skills: student.skills,
+          core_skills: formattedCoreSkills,
         }
       }
     });
@@ -433,8 +432,8 @@ const getStudentProfile = async (req, res, next) => {
 // @access  Student
 const updateStudentProfile = async (req, res, next) => {
   const { id: userId } = req.user;
-  const profileData = req.body; // Joi validation handled req.body directly for this route
-  const newImageUrl = req.file ? `/uploads/profiles/${req.file.filename}` : null; // New image upload
+  const profileData = req.body;
+  const newImageUrl = req.file ? `/uploads/profiles/${req.file.filename}` : null;
 
   try {
     const student = await Student.findOne({ where: { userId } });
@@ -442,19 +441,16 @@ const updateStudentProfile = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Student profile not found.' });
     }
 
-    // Update basic student fields
     await student.update({
       firstName: profileData.firstName || student.firstName,
       lastName: profileData.lastName || student.lastName,
       mobile: profileData.mobile || student.mobile,
       about: profileData.about !== undefined ? profileData.about : student.about,
-      imageUrl: newImageUrl || student.imageUrl, // Prioritize new image, otherwise keep existing
+      imageUrl: newImageUrl || student.imageUrl,
       skills: profileData.skills || student.skills
     });
 
-    // Handle Education updates
     if (profileData.education !== undefined) {
-      // Get existing education IDs
       const existingEduIds = (await Education.findAll({
         where: { studentId: student.id },
         attributes: ['id']
@@ -462,25 +458,20 @@ const updateStudentProfile = async (req, res, next) => {
 
       const incomingEduIds = profileData.education.map(edu => edu.id).filter(Boolean);
 
-      // Delete educations that are no longer present
       const educationsToDelete = existingEduIds.filter(id => !incomingEduIds.includes(id));
       if (educationsToDelete.length > 0) {
         await Education.destroy({ where: { id: { [Op.in]: educationsToDelete } } });
       }
 
-      // Create or update educations
       for (const eduData of profileData.education) {
         if (eduData.id) {
-          // Update existing
           await Education.update(eduData, { where: { id: eduData.id, studentId: student.id } });
         } else {
-          // Create new
           await Education.create({ ...eduData, studentId: student.id });
         }
       }
     }
 
-    // Handle Certification updates (similar logic to education)
     if (profileData.certifications !== undefined) {
       const existingCertIds = (await Certification.findAll({
         where: { studentId: student.id },
@@ -495,9 +486,6 @@ const updateStudentProfile = async (req, res, next) => {
       }
 
       for (const certData of profileData.certifications) {
-        // Handle certificate file upload if present in the nested object (less common, usually separate uploads)
-        // For now, assuming certificateLink is a URL provided, or pre-existing.
-        // If frontend sends new file with each cert update, this logic needs adjustment.
         if (certData.id) {
           await Certification.update(certData, { where: { id: certData.id, studentId: student.id } });
         } else {
@@ -513,7 +501,6 @@ const updateStudentProfile = async (req, res, next) => {
 
   } catch (error) {
     console.error('Error updating student profile:', error);
-    // If a new image was uploaded and an error occurred during DB update, clean it up
     if (newImageUrl && fs.existsSync(path.join(__dirname, '..', newImageUrl))) {
         fs.unlink(path.join(__dirname, '..', newImageUrl), (err) => {
             if (err) console.error('Error deleting uploaded profile image after update failure:', err);

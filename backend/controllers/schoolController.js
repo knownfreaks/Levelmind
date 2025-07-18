@@ -14,6 +14,8 @@ const StudentCoreSkillAssessment = require('../models/StudentCoreSkillAssessment
 const Certification = require('../models/Certification'); // Assuming Certification is the model for student certifications
 const { sendEmail } = require('../utils/emailService'); // To notify students about shortlisting/interviews
 const moment = require('moment'); // For date/time formatting and calculations
+const STATIC_FILES_BASE_URL = process.env.STATIC_FILES_BASE_URL; // <--- ADD THIS LINE
+// Ensure STATIC_FILES_BASE_URL is defined in your .env file
 
 // Helper function for sending application status notifications
 const sendApplicationStatusNotification = async (studentId, jobTitle, status, interviewDetails = null) => {
@@ -145,7 +147,7 @@ const getRecentJobPostings = async (req, res, next) => {
       postedAgo: moment(job.createdAt).fromNow(), // e.g., "29 min ago"
       status: job.status === 'open' ? 'Active' : 'Closed',
       description: job.jobDescription.substring(0, 100) + '...', // Shorten description
-      logo: school.logoUrl // School logo URL
+      logo: school.logoUrl ? `${STATIC_FILES_BASE_URL}/profiles/${path.basename(school.logoUrl)}` : null // <--- MODIFIED
     }));
 
     res.status(200).json({
@@ -272,7 +274,7 @@ const getSchoolJobs = async (req, res, next) => {
       postedAgo: moment(job.createdAt).fromNow(),
       status: job.status === 'open' ? 'Active' : 'Closed',
       description: job.jobDescription.substring(0, 100) + '...',
-      logo: job.School.logoUrl
+      logo: job.School.logoUrl ? `${STATIC_FILES_BASE_URL}/profiles/${path.basename(job.School.logoUrl)}` : null, // <--- MODIFIED
     }));
 
     res.status(200).json({
@@ -328,7 +330,7 @@ const getJobDetails = async (req, res, next) => {
       skills: job.requirements.split('\n').filter(Boolean), // Duplicating for now, ideally needs clearer separation in model
       about: job.School.bio,
       aboutLink: job.School.websiteLink,
-      logo: job.School.logoUrl,
+      logo: job.School.logoUrl ? `${STATIC_FILES_BASE_URL}/profiles/${path.basename(job.School.logoUrl)}` : null, // <--- MODIFIED
       schoolAddress: schoolAddress // For student view
     };
 
@@ -420,7 +422,8 @@ const getJobApplicants = async (req, res, next) => {
                 (app.status === 'interview_scheduled' ? 'In Progress' :
                 (app.status === 'rejected' ? 'Completed' : 'Unknown'))), // Map internal status to frontend tabs
         date: moment(app.applicationDate).format('DD/MM/YYYY'),
-        avatar: student.imageUrl,
+        avatar: student.imageUrl ? `${STATIC_FILES_BASE_URL}/profiles/${path.basename(student.imageUrl)}` : null, // Profile image URL
+        skills: student.skills.slice(0, 3), // Top 3 skills for preview
         interviewDetails: app.interview ? {
           date: moment(app.interview.date).format('YYYY-MM-DD'),
           startTime: app.interview.startTime,
@@ -627,7 +630,9 @@ const getApplicantDetails = async (req, res, next) => {
       title: cert.name,
       issuer: cert.issuedBy,
       year: moment(cert.dateReceived).year(),
-      status: cert.hasExpiry && moment(cert.expiryDate).isBefore(moment()) ? 'Expired' : 'Active'
+      status: cert.hasExpiry && moment(cert.expiryDate).isBefore(moment()) ? 'Expired' : 'Active',
+      certificateLink: cert.certificateLink ? `${STATIC_FILES_BASE_URL}/certificates/${path.basename(cert.certificateLink)}` : null // <--- MODIFIED
+      
     }));
 
     const formattedEducation = student.educations.map(edu => ({
@@ -656,7 +661,7 @@ const getApplicantDetails = async (req, res, next) => {
       coreSkills: formattedCoreSkills,
       academicSkills: student.skills, // All user-added skills are academic skills here
       publications: [], // Not in schema yet, will be empty
-      imageUrl: student.imageUrl // Profile image URL
+      imageUrl: student.imageUrl ? `${STATIC_FILES_BASE_URL}/profiles/${path.basename(student.imageUrl)}` : null // <--- MODIFIED
     };
 
     res.status(200).json({

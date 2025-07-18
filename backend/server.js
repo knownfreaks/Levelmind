@@ -47,26 +47,34 @@ sequelize.sync()
   });
 
 // --- Root Route for Testing ---
-app.get('/', (req, res) => {
+// This is a basic route for the root of the API, not the main application root.
+app.get('/api', (req, res) => { // Changed from '/' to '/api' to match base URL
   res.send('Welcome to the Recruitment Platform API!');
 });
 
-// --- API Routes ---
 
 // --- API Routes ---
 const authRoutes = require('./routes/authRoutes');
-const adminRoutes = require('./routes/adminRoutes'); // Import admin routes
-const schoolRoutes = require('./routes/schoolRoutes'); // Import school routes
-const studentRoutes = require('./routes/studentRoutes'); // Import student routes
-const notificationRoutes = require('./routes/notificationRoutes'); // Import notification routes
-const helpdeskRoutes = require('./routes/helpdeskRoutes'); // Import helpdesk routes
+const adminRoutes = require('./routes/adminRoutes');
+const schoolRoutes = require('./routes/schoolRoutes');
+const studentRoutes = require('./routes/studentRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const helpdeskRoutes = require('./routes/helpdeskRoutes');
+// const publicJobRoutes = require('./routes/publicJobRoutes'); // If you have this file, keep it
+const sharedAdminRoutes = require('./routes/sharedAdminRoutes'); // <--- ADDED THIS IMPORT
 
-app.use('/api/auth', authRoutes); // Use auth routes under /api/auth prefix
-app.use('/api/admin', adminRoutes); // Use admin routes under /api/admin prefix
-app.use('/api/school', schoolRoutes); // Use school routes under /api/school prefix
-app.use('/api/student', studentRoutes); // Use student routes under /api/student prefix
-app.use('/api/notifications', notificationRoutes); // Use notifications routes
-app.use('/api/help', helpdeskRoutes); // Use helpdesk routes
+app.use('/api/auth', authRoutes);
+app.use('/api/school', schoolRoutes);
+app.use('/api/student', studentRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/help', helpdeskRoutes);
+// app.use('/api/jobs', publicJobRoutes); // If you have public job routes, uncomment this
+
+// IMPORTANT: Order matters!
+// Mount sharedAdminRoutes BEFORE adminRoutes if shared routes are sub-paths of admin
+// Or, if sharedAdminRoutes handles full paths like '/admin/categories', mount it here.
+app.use('/api', sharedAdminRoutes); // <--- ADDED THIS LINE: This router handles '/admin/categories'
+app.use('/api/admin', adminRoutes); // This router handles all other '/admin/*' routes (admin-only)
 
 
 // --- Error Handling Middleware (Keep this as the last middleware) ---
@@ -75,18 +83,17 @@ app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'An unexpected error occurred.';
 
-  // Check if error is from Multer (file upload)
   if (err instanceof Error && err.code === 'LIMIT_FILE_SIZE') {
     return res.status(400).json({ success: false, message: 'File size too large. Maximum allowed size exceeded.' });
   }
-  if (err instanceof Error && err.message.includes('Allowed file types')) { // Custom error message from fileFilter
+  if (err instanceof Error && err.message.includes('Allowed file types')) {
     return res.status(400).json({ success: false, message: err.message });
   }
 
   res.status(statusCode).json({
     success: false,
     message: message,
-    // data: process.env.NODE_ENV === 'development' ? err.stack : undefined // Optional: send stack in dev
+    // data: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
 });
 

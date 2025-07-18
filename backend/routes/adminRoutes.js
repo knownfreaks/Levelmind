@@ -6,20 +6,18 @@ const {
   bulkCreateUsers,
   createCoreSkill,
   getCoreSkills,
-  createCategory,
-  getCategories,
+  createCategory, // <--- ADD THIS IMPORT BACK
   uploadStudentCoreSkillMarks,
   updateUserPasswordByAdmin,
-  // Import the new controller function for bulk skill marks
-  bulkUploadStudentCoreSkillMarks // <--- ADDED THIS LINE
+  bulkUploadStudentCoreSkillMarks,
+  deleteUser
 } = require('../controllers/adminController');
 const authMiddleware = require('../middleware/authMiddleware');
 const authorizeRoles = require('../middleware/roleMiddleware');
-const { validate } = require('../middleware/validationMiddleware'); // General validator
-const { uploadProfileImage } = require('../config/multer'); // Multer for profile images/logos. For excel, we need a separate multer config.
-const Joi = require('joi'); // For inline validation schemas
+const { validate } = require('../middleware/validationMiddleware');
+const { uploadProfileImage } = require('../config/multer');
+const Joi = require('joi');
 
-// For bulk upload (Excel files), we need a specific multer storage
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -31,7 +29,6 @@ const excelStorage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    // Ensure filename is unique to prevent clashes
     cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`);
   }
 });
@@ -39,22 +36,22 @@ const excelStorage = multer.diskStorage({
 const uploadExcel = multer({
   storage: excelStorage,
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || // .xlsx
-        file.mimetype === 'application/vnd.ms-excel' || // .xls
-        file.mimetype === 'text/csv' // Also allow CSV for flexibility
+    if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        file.mimetype === 'application/vnd.ms-excel' ||
+        file.mimetype === 'text/csv'
         ) {
       cb(null, true);
     } else {
       cb(new Error('Only Excel files (.xlsx, .xls) or CSV files (.csv) are allowed!'), false);
     }
   },
-  limits: { fileSize: 10 * 1024 * 1024 } // 10 MB limit for excel/csv
+  limits: { fileSize: 10 * 1024 * 1024 }
 });
 
 
 const router = express.Router();
 
-// All admin routes should be protected by authMiddleware and authorizeRoles('admin')
+// --- All routes below this line are Admin-only ---
 router.use(authMiddleware);
 router.use(authorizeRoles('admin'));
 
@@ -73,6 +70,7 @@ router.patch('/users/:id/password', validate(Joi.object({
       'any.required': 'New password is required.'
     })
 })), updateUserPasswordByAdmin);
+router.delete('/users/:id', deleteUser);
 
 // Core Skill Management
 router.post('/skills', validate(Joi.object({
@@ -81,15 +79,8 @@ router.post('/skills', validate(Joi.object({
 })), createCoreSkill);
 router.get('/skills', getCoreSkills);
 
-// New route for bulk uploading core skill marks
-router.post('/skills/:coreSkillId/bulk-marks-upload', uploadExcel.single('file'), bulkUploadStudentCoreSkillMarks); // <--- ADDED THIS ROUTE
-
-// Category Management
-router.post('/categories', validate(Joi.object({
-  name: Joi.string().min(1).required(),
-  skills: Joi.array().items(Joi.string().uuid()).optional().default([])
-})), createCategory);
-router.get('/categories', getCategories);
+// Bulk Upload Student Core Skill Marks
+router.post('/skills/:coreSkillId/bulk-marks-upload', uploadExcel.single('file'), bulkUploadStudentCoreSkillMarks);
 
 // Student Core Skill Assessment (single upload)
 router.post('/skills/:userId/marks', validate(Joi.object({
@@ -100,6 +91,19 @@ router.post('/skills/:userId/marks', validate(Joi.object({
   })).min(1).required()
 })), uploadStudentCoreSkillMarks);
 
+// Category Management (POST route remains Admin-only here)
+router.post('/categories', validate(Joi.object({
+  name: Joi.string().min(1).required(),
+  skills: Joi.array().items(Joi.string().uuid()).optional().default([])
+})), createCategory); // <--- THIS ROUTE DEFINITION
+
+// This section (categoriesRouter) is now handled by sharedAdminRoutes.js for GET /admin/categories
+// and POST /admin/categories is handled above.
+// You do NOT need the categoriesRouter block here anymore if you moved POST /categories above.
+// If you want POST /categories to be in sharedAdminRoutes too, then move it there.
+// For now, let's assume POST /categories stays here.
+
 
 module.exports = router;
-
+// If you want to keep the POST /categories route in sharedAdminRoutes.js, you can remove it from here.
+// Otherwise, this file now handles all admin routes including categories.

@@ -15,6 +15,8 @@
     const fs = require('fs');
     const xlsx = require('xlsx');
     const validator = require('validator');
+    // New constant for static files base URL
+    const STATIC_FILES_BASE_URL = process.env.STATIC_FILES_BASE_URL; // <--- ADD THIS LINE
 
     // Helper function to remove file if error occurs during bulk upload parsing
     const cleanupUploadedFile = (filePath) => {
