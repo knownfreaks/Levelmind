@@ -1,4 +1,5 @@
 // controllers/schoolController.js
+const path = require('path');
 const { Op } = require('sequelize');
 const User = require('../models/User');
 const School = require('../models/School');
