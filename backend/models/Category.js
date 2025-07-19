@@ -1,32 +1,34 @@
-// models/Category.js
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const CoreSkill = require('./CoreSkill'); // Import CoreSkill model
+// backend/models/Category.js
 
-const Category = sequelize.define('Category', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true,
-    allowNull: false
-  },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true
-  },
-  // Array of CoreSkill IDs that this category includes
-  coreSkillIds: {
-    type: DataTypes.ARRAY(DataTypes.UUID),
-    defaultValue: [],
-    allowNull: false
-  }
-}, {
-  timestamps: true
-});
+// This file defines the Category model, used for job types (e.g., "Teaching", "Administration").
+// It exports a function that takes the sequelize instance and DataTypes as arguments.
+module.exports = (sequelize, DataTypes) => {
+  const Category = sequelize.define('Category', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+      allowNull: false
+    },
+    name: { // Name of the category (e.g., "Mathematics Teacher", "Science Teacher", "Administration")
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true // Category names should be unique
+    },
+    // This field stores an array of CoreSkill UUIDs associated with this category.
+    // The actual association is defined in database.js using belongsToMany.
+    coreSkillIds: {
+      type: DataTypes.ARRAY(DataTypes.UUID), // Array of UUIDs
+      defaultValue: [],
+      allowNull: false
+    }
+  }, {
+    // Model options
+    timestamps: true, // Automatically adds createdAt and updatedAt fields
+    tableName: 'Categories' // Explicitly define table name
+  });
 
-// Define a many-to-many relationship through a join table (or just store IDs in array)
-// For simplicity and matching frontend, storing IDs in array for now.
-// If detailed linking with CoreSkill model is needed, a join table (CategoryCoreSkill) would be better.
+  // IMPORTANT: Associations are defined centrally in backend/config/database.js
 
-module.exports = Category;
+  return Category; // Return the defined Category model
+};

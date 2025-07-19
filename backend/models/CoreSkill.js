@@ -1,31 +1,32 @@
-// models/CoreSkill.js
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
+// backend/models/CoreSkill.js
 
-const CoreSkill = sequelize.define('CoreSkill', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true,
-    allowNull: false
-  },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true
-  },
-  // Store sub-skills as an array of strings (max 4)
-  subSkills: {
-    type: DataTypes.ARRAY(DataTypes.STRING),
-    allowNull: false,
-    defaultValue: [],
-    // TEMPORARILY REMOVE THE VALIDATION BLOCK BELOW
-    // validate: {
-    //   len: [1, 4] // Ensure between 1 and 4 sub-skills
-    // }
-  }
-}, {
-  timestamps: true // Adds createdAt and updatedAt fields
-});
+// This file defines the CoreSkill model, representing general skills (e.g., "Mathematics", "Communication").
+// It exports a function that takes the sequelize instance and DataTypes as arguments.
+module.exports = (sequelize, DataTypes) => {
+  const CoreSkill = sequelize.define('CoreSkill', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+      allowNull: false
+    },
+    name: { // Name of the core skill (e.g., "Computer Science", "Mathematics", "English")
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true // Core skill names should be unique
+    },
+    subSkills: { // Array of specific sub-skills within this core skill (e.g., ["Algebra", "Geometry"] for "Mathematics")
+      type: DataTypes.ARRAY(DataTypes.STRING),
+      defaultValue: [],
+      allowNull: false
+    }
+  }, {
+    // Model options
+    timestamps: true, // Automatically adds createdAt and updatedAt fields
+    tableName: 'CoreSkills' // Explicitly define table name
+  });
 
-module.exports = CoreSkill;
+  // IMPORTANT: Associations are defined centrally in backend/config/database.js
+
+  return CoreSkill; // Return the defined CoreSkill model
+};

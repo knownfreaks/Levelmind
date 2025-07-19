@@ -1,5 +1,5 @@
 // controllers/notificationController.js
-const Notification = require('../models/Notification');
+const { User, Student, School, Job, Application, Interview, Notification, Category, CoreSkill, StudentCoreSkillAssessment, Education, Certification, HelpRequest } = require('../config/database');
 const { Op } = require('sequelize'); // For filtering unread/all
 
 // @desc    Get notifications for the authenticated user

@@ -1,52 +1,53 @@
-// models/Interview.js
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const Application = require('./Application'); // Link to the application it relates to
+// backend/models/Interview.js
 
-const Interview = sequelize.define('Interview', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true,
-    allowNull: false
-  },
-  applicationId: {
-    type: DataTypes.UUID,
-    allowNull: false,
-    references: {
-      model: Application,
-      key: 'id'
+// This file defines the Interview model, representing scheduled interviews for applications.
+// It exports a function that takes the sequelize instance and DataTypes as arguments.
+module.exports = (sequelize, DataTypes) => {
+  const Interview = sequelize.define('Interview', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+      allowNull: false
     },
-    onDelete: 'CASCADE',
-    unique: true // One interview per application (for a given job)
-  },
-  title: {
-    type: DataTypes.STRING,
-    defaultValue: 'Scheduled Interview', // Fixed as per frontend spec
-    allowNull: false
-  },
-  date: {
-    type: DataTypes.DATEONLY, // YYYY-MM-DD
-    allowNull: false
-  },
-  startTime: {
-    type: DataTypes.TIME, // HH:mm:ss
-    allowNull: false
-  },
-  endTime: {
-    type: DataTypes.TIME, // HH:mm:ss
-    allowNull: false
-  },
-  location: { // Prefilled from school's address
-    type: DataTypes.STRING,
-    allowNull: false
-  }
-}, {
-  timestamps: true
-});
+    applicationId: { // Foreign key linking to the specific application this interview is for
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: 'Applications', // Reference the table name directly
+        key: 'id'
+      },
+      onDelete: 'CASCADE', // If an application is deleted, its interview is also deleted
+      unique: true // Ensures one interview per application (for a given job)
+    },
+    title: { // Title of the interview (e.g., "First Round Interview", "Technical Interview")
+      type: DataTypes.STRING,
+      defaultValue: 'Scheduled Interview',
+      allowNull: false
+    },
+    date: { // Date of the interview
+      type: DataTypes.DATEONLY, // YYYY-MM-DD
+      allowNull: false
+    },
+    startTime: { // Start time of the interview
+      type: DataTypes.TIME, // HH:mm:ss
+      allowNull: false
+    },
+    endTime: { // End time of the interview
+      type: DataTypes.TIME, // HH:mm:ss
+      allowNull: false
+    },
+    location: { // Interview location (e.g., "Online", "School Address")
+      type: DataTypes.STRING,
+      allowNull: false
+    }
+  }, {
+    // Model options
+    timestamps: true, // Automatically adds createdAt and updatedAt fields
+    tableName: 'Interviews' // Explicitly define table name
+  });
 
-// Define association
-Interview.belongsTo(Application, { foreignKey: 'applicationId' });
-Application.hasOne(Interview, { foreignKey: 'applicationId', as: 'interview' }); // An application can have one interview scheduled
+  // IMPORTANT: Associations are defined centrally in backend/config/database.js
 
-module.exports = Interview;
+  return Interview; // Return the defined Interview model
+};

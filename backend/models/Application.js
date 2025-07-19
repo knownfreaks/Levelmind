@@ -1,76 +1,69 @@
-// models/Application.js
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const Student = require('./Student');
-const Job = require('./Job');
+// backend/models/Application.js
 
-const Application = sequelize.define('Application', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true,
-    allowNull: false
-  },
-  studentId: {
-    type: DataTypes.UUID,
-    allowNull: false,
-    references: {
-      model: Student,
-      key: 'id'
+// This file defines the Application model, representing a student's application to a job.
+// It exports a function that takes the sequelize instance and DataTypes as arguments.
+module.exports = (sequelize, DataTypes) => {
+  const Application = sequelize.define('Application', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+      allowNull: false
     },
-    onDelete: 'CASCADE'
-  },
-  jobId: {
-    type: DataTypes.UUID,
-    allowNull: false,
-    references: {
-      model: Job,
-      key: 'id'
+    studentId: { // Foreign key linking to the Student who applied
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: 'Students', // Reference the table name directly
+        key: 'id'
+      },
+      onDelete: 'CASCADE' // If a student is deleted, their applications are also deleted
     },
-    onDelete: 'CASCADE'
-  },
-  // Status to track application progress from school's perspective
-  // Maps to "New Candidates", "In Progress", "Completed", "On Hold" from frontend for ApplicationsBoard
-  status: {
-    type: DataTypes.ENUM('applied', 'shortlisted', 'interview_scheduled', 'rejected'),
-    defaultValue: 'applied',
-    allowNull: false
-  },
-  // Optional: resume file upload (if direct upload for application form)
-  resumeUrl: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  coverLetter: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  experience: { // e.g., "3 years", "Fresh"
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  availability: { // e.g., "Immediately", "2 Weeks Notice"
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  // For frontend's `date` field (application date)
-  applicationDate: {
-    type: DataTypes.DATEONLY, // Store as YYYY-MM-DD
-    defaultValue: DataTypes.NOW // Default to current date
-  }
-}, {
-  timestamps: true,
-  // Ensure a student can apply to a job only once
-  indexes: [{
-    unique: true,
-    fields: ['studentId', 'jobId']
-  }]
-});
+    jobId: { // Foreign key linking to the Job they applied for
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: 'Jobs', // Reference the table name directly
+        key: 'id'
+      },
+      onDelete: 'CASCADE' // If a job is deleted, its applications are also deleted
+    },
+    applicationDate: {
+      type: DataTypes.DATEONLY, // YYYY-MM-DD
+      defaultValue: DataTypes.NOW, // Automatically set to current date on creation
+    },
+    status: { // Current status of the application
+      type: DataTypes.ENUM('applied', 'shortlisted', 'interview_scheduled', 'rejected', 'hired'),
+      defaultValue: 'applied', // Default status when first applied
+      allowNull: false
+    },
+    coverLetter: {
+      type: DataTypes.TEXT,
+      allowNull: true // Optional cover letter text
+    },
+    experience: { // Summary of relevant experience for this application
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    availability: { // Student's availability for interview/start date
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    resumeUrl: { // URL to the resume submitted for this specific application
+      type: DataTypes.STRING,
+      allowNull: true
+    }
+  }, {
+    // Model options
+    timestamps: true, // Automatically adds createdAt and updatedAt fields
+    tableName: 'Applications', // Explicitly define table name
+    indexes: [{ // Ensure a student can only apply to a specific job once
+      unique: true,
+      fields: ['studentId', 'jobId']
+    }]
+  });
 
-// Define associations
-Application.belongsTo(Student, { foreignKey: 'studentId' });
-Application.belongsTo(Job, { foreignKey: 'jobId' });
-Student.hasMany(Application, { foreignKey: 'studentId', as: 'applications' });
-Job.hasMany(Application, { foreignKey: 'jobId', as: 'applications' });
+  // IMPORTANT: Associations are defined centrally in backend/config/database.js
 
-module.exports = Application;
+  return Application; // Return the defined Application model
+};

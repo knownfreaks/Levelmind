@@ -1,18 +1,7 @@
 // controllers/schoolController.js
 const path = require('path');
 const { Op } = require('sequelize');
-const User = require('../models/User');
-const School = require('../models/School');
-const Job = require('../models/Job');
-const Application = require('../models/Application');
-const Student = require('../models/Student');
-const Interview = require('../models/Interview');
-const Notification = require('../models/Notification');
-const Category = require('../models/Category'); // Assuming Category is the model for job types/categories
-const Education = require('../models/Education'); // Assuming Education is the model for student education details
-const CoreSkill = require('../models/CoreSkill');
-const StudentCoreSkillAssessment = require('../models/StudentCoreSkillAssessment');
-const Certification = require('../models/Certification'); // Assuming Certification is the model for student certifications
+const { User, Student, School, Job, Application, Interview, Notification, Category, CoreSkill, StudentCoreSkillAssessment, Education, Certification, HelpRequest } = require('../config/database');
 const { sendEmail } = require('../utils/emailService'); // To notify students about shortlisting/interviews
 const moment = require('moment'); // For date/time formatting and calculations
 const STATIC_FILES_BASE_URL = process.env.STATIC_FILES_BASE_URL; // <--- ADD THIS LINE
@@ -52,31 +41,26 @@ const sendApplicationStatusNotification = async (studentId, jobTitle, status, in
 // @route   GET /api/school/dashboard-metrics
 // @access  School
 const getSchoolDashboardMetrics = async (req, res, next) => {
-  // --- DEBUGGING START ---
-  console.log('DEBUG: Inside getSchoolDashboardMetrics');
-  console.log('DEBUG: req.user object:', req.user); // Log the entire req.user object
-  // --- DEBUGGING END ---
-
-  // Correctly extract the user ID from req.user
-  const userId = req.user ? req.user.id : null; // Get userId from req.user.id
+  const userId = req.user ? req.user.id : null;
 
   if (!userId) {
-    // This scenario should ideally be caught by authMiddleware, but it's a safeguard.
     console.error('ERROR: User ID is missing from req.user in getSchoolDashboardMetrics.');
-    return res.status(401).json({ success: false, message: 'Authentication failed: User ID not found in request. Please ensure you are logged in correctly.' });
+    return res.status(401).json({ success: false, message: 'Authentication failed: User ID not found.' });
   }
 
-  console.log('DEBUG: Extracted userId:', userId); // Log the extracted userId
-
   try {
-    // Find the School profile associated with this userId
-    const school = await School.findOne({ where: { userId: userId } }); // Use userId to find the school profile
+    const school = await School.findOne({
+      where: { userId: userId },
+      include: [{ model: User, attributes: ['name'] }] // <--- IMPORTANT: Include User to get the school's name
+    });
 
     if (!school) {
       return res.status(404).json({ success: false, message: 'School profile not found for the authenticated user. Please complete your school onboarding.' });
     }
 
-    // Now use school.id to query jobs and applications related to this specific school profile
+    // Now, when you need the school's name, access it from the associated User model
+    const schoolName = school.User ? school.User.name : 'N/A'; // Safeguard
+
     const activeJobPostings = await Job.count({
       where: { schoolId: school.id, status: 'open' }
     });
@@ -86,7 +70,7 @@ const getSchoolDashboardMetrics = async (req, res, next) => {
     });
 
     const pendingReviews = await Application.count({
-      where: { status: 'applied' }, // 'applied' implies pending review
+      where: { status: 'applied' },
       include: [{ model: Job, where: { schoolId: school.id } }]
     });
 
@@ -94,6 +78,7 @@ const getSchoolDashboardMetrics = async (req, res, next) => {
       success: true,
       message: 'School dashboard metrics fetched successfully.',
       data: {
+        schoolName: schoolName, // <--- ADDED schoolName to response
         jobPostings: activeJobPostings,
         totalApplications: totalApplications,
         pendingReviews: pendingReviews
@@ -109,6 +94,60 @@ const getSchoolDashboardMetrics = async (req, res, next) => {
 // @desc    Get recent job postings by the school
 // @route   GET /api/school/recent-job-postings
 // @access  School
+
+const getSchoolProfile = async (req, res, next) => {
+  const { id: userId } = req.user; // Authenticated user ID
+
+  try {
+    const school = await School.findOne({
+      where: { userId },
+      include: [
+        { model: User, attributes: ['email', 'name'] }, // Include associated User details
+        {
+          model: Category, // Include associated Categories (job types)
+          attributes: ['id', 'name'],
+          through: { attributes: [] } // Exclude join table attributes
+        }
+      ]
+    });
+
+    if (!school) {
+      return res.status(404).json({ success: false, message: 'School profile not found. Please complete your onboarding.' });
+    }
+
+    // Format the response to be clean and useful for the frontend
+    const formattedSchoolProfile = {
+      id: school.id,
+      name: school.name,
+      email: school.User.email, // Email from associated User model
+      bio: school.bio,
+      websiteLink: school.websiteLink,
+      address: school.address,
+      city: school.city,
+      state: school.state,
+      pincode: school.pincode,
+      // Ensure logoUrl is correctly formatted for public access
+      logoUrl: school.logoUrl ? `${STATIC_FILES_BASE_URL}/profiles/${path.basename(school.logoUrl)}` : null,
+      onboardingComplete: school.User.isOnboardingComplete, // From User model
+      // List of associated category IDs and names
+      categories: school.Categories ? school.Categories.map(cat => ({ id: cat.id, name: cat.name })) : []
+    };
+
+    res.status(200).json({
+      success: true,
+      message: 'School profile fetched successfully.',
+      data: {
+        profile: formattedSchoolProfile
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching school profile:', error);
+    next(error);
+  }
+};
+
+
 const getRecentJobPostings = async (req, res, next) => {
   // --- DEBUGGING START ---
   console.log('DEBUG: Inside getRecentJobPostings');
@@ -135,13 +174,23 @@ const getRecentJobPostings = async (req, res, next) => {
       where: { schoolId: school.id },
       limit: 5, // Or whatever number defines 'recent'
       order: [['createdAt', 'DESC']],
-      include: [{ model: Category, as: 'jobType', attributes: ['name'] }] // Include job type name
+      include: [
+        {
+          model: School, // Include the School model
+          attributes: ['logoUrl'], // Select only logoUrl from School
+          include: [{ // Nested include for the User model associated with the School
+            model: User,
+            attributes: ['name'] // Select only name from User
+          }]
+        },
+        { model: Category, as: 'jobType', attributes: ['name'] }
+      ]
     });
 
     const formattedJobs = jobs.map(job => ({
       id: job.id,
       title: job.title,
-      school: school.name, // School name from the associated User
+      school: job.School && job.School.User ? job.School.User.name : 'Unknown School', // School name from the associated User
       location: job.location,
       jobType: job.jobType ? job.jobType.name : null,
       salary: job.minSalaryLPA + (job.maxSalaryLPA ? `-${job.maxSalaryLPA}` : '') + ' LPA',
@@ -536,6 +585,14 @@ const scheduleInterview = async (req, res, next) => {
         return res.status(400).json({ success: false, message: 'Interview can only be scheduled for shortlisted applicants.' });
     }
 
+    // --- MODIFIED: Date Parsing ---
+    const parsedDate = moment(date); // Attempt to parse the incoming date string
+    if (!parsedDate.isValid()) {
+      return res.status(400).json({ success: false, message: 'Invalid date format provided. Please use a recognizable date format (e.g., YYYY-MM-DD, MM/DD/YYYY).' });
+    }
+    const formattedDateForDB = parsedDate.format('YYYY-MM-DD'); // Format for database storage
+    // --- END MODIFIED ---
+
     const interviewLocation = `${school.address}, ${school.city}, ${school.state}, ${school.pincode}`;
 
     // Check if an interview already exists for this application
@@ -545,7 +602,7 @@ const scheduleInterview = async (req, res, next) => {
       // Update existing interview
       await existingInterview.update({
         title,
-        date,
+        date: formattedDateForDB,
         startTime,
         endTime,
         location: interviewLocation
@@ -562,7 +619,7 @@ const scheduleInterview = async (req, res, next) => {
       await Interview.create({
         applicationId,
         title,
-        date,
+        date: formattedDateForDB,
         startTime,
         endTime,
         location: interviewLocation
@@ -688,6 +745,7 @@ module.exports = {
   getJobApplicants,
   updateApplicationStatus,
   scheduleInterview,
-  getApplicantDetails
+  getApplicantDetails,
+  getSchoolProfile
 };
 // Note: Ensure to import any additional models or utilities as needed for the above functions.

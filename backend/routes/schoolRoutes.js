@@ -10,17 +10,28 @@ const {
   getJobApplicants,
   updateApplicationStatus,
   scheduleInterview,
+  getSchoolProfile,
   getApplicantDetails // This endpoint used by School to view applicant details
 } = require('../controllers/schoolController');
 const authMiddleware = require('../middleware/authMiddleware');
 const authorizeRoles = require('../middleware/roleMiddleware');
 const { validate, jobSchemas } = require('../middleware/validationMiddleware');
+const Joi = require('joi');
 
 const router = express.Router();
 
 // Apply auth and role middleware to all school-specific routes
 router.use(authMiddleware);
 router.use(authorizeRoles('school')); // All routes in this file require 'school' role
+
+//Application Management
+router.patch('/applications/:id/status', updateApplicationStatus);
+router.post('/applications/:id/schedule', validate(Joi.object({
+  title: Joi.string().min(3).required(),
+  date: Joi.string().required(), // <--- MODIFIED: Accepts date as a string
+  startTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).required(), // HH:MM format
+  endTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).required()
+})), scheduleInterview);
 
 // Dashboard
 router.get('/dashboard-metrics', getSchoolDashboardMetrics);
@@ -39,6 +50,6 @@ router.get('/applicants/:id', getApplicantDetails); // Get full details of a spe
 // Application Status & Interview Scheduling
 router.patch('/applications/:id/status', validate(jobSchemas.updateApplicationStatus), updateApplicationStatus);
 router.post('/applications/:id/schedule', validate(jobSchemas.scheduleInterview), scheduleInterview);
-
+router.get('/profile', getSchoolProfile); // Get the school's profile information
 
 module.exports = router;

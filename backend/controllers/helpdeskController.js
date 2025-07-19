@@ -1,7 +1,5 @@
 // controllers/helpdeskController.js
-const HelpRequest = require('../models/HelpRequest');
-const User = require('../models/User');
-const Notification = require('../models/Notification'); // To notify admin
+const { User, Student, School, Job, Application, Interview, Notification, Category, CoreSkill, StudentCoreSkillAssessment, Education, Certification, HelpRequest } = require('../config/database');
 
 // @desc    Submit a help request
 // @route   POST /api/help

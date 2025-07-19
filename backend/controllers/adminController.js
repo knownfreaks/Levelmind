@@ -1,19 +1,12 @@
     // controllers/adminController.js
     const { Op } = require('sequelize');
-    const User = require('../models/User');
-    const School = require('../models/School');
-    const Student = require('../models/Student');
-    const CoreSkill = require('../models/CoreSkill');
-    const StudentCoreSkillAssessment = require('../models/StudentCoreSkillAssessment');
-    const Category = require('../models/Category');
-    const Notification = require('../models/Notification');
-    const HelpRequest = require('../models/HelpRequest');
-    const Job = require('../models/Job');
+    const { User, Student, School, Job, Application, Interview, Notification, Category, CoreSkill, StudentCoreSkillAssessment, Education, Certification, HelpRequest } = require('../config/database');
     const { hashPassword } = require('../utils/passwordUtils');
     const { sendEmail } = require('../utils/emailService');
     const path = require('path');
     const fs = require('fs');
     const xlsx = require('xlsx');
+    const Joi = require('joi'); // If Joi is used for validation
     const validator = require('validator');
     // New constant for static files base URL
     const STATIC_FILES_BASE_URL = process.env.STATIC_FILES_BASE_URL; // <--- ADD THIS LINE

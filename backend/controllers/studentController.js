@@ -1,17 +1,6 @@
 // controllers/studentController.js
 const { Op } = require('sequelize');
-const User = require('../models/User');
-const Student = require('../models/Student');
-const Job = require('../models/Job');
-const Application = require('../models/Application');
-const Interview = require('../models/Interview');
-const CoreSkill = require('../models/CoreSkill');
-const StudentCoreSkillAssessment = require('../models/StudentCoreSkillAssessment');
-const Category = require('../models/Category');
-const School = require('../models/School'); // For school details in job opportunities
-const Education = require('../models/Education');
-const Certification = require('../models/Certification');
-const Notification = require('../models/Notification');
+const { User, Student, School, Job, Application, Interview, Notification, Category, CoreSkill, StudentCoreSkillAssessment, Education, Certification, HelpRequest } = require('../config/database');
 const moment = require('moment'); // For date/time formatting and calculations
 const path = require('path'); // Needed for path.basename <--- ENSURE THIS IS PRESENT
 

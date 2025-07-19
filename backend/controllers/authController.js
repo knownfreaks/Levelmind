@@ -1,9 +1,5 @@
 // controllers/authController.js
-const User = require('../models/User');
-const School = require('../models/School');
-const Student = require('../models/Student');
-const Education = require('../models/Education');
-const Certification = require('../models/Certification');
+const { User, Student, School, Job, Application, Interview, Notification, Category, CoreSkill, StudentCoreSkillAssessment, Education, Certification, HelpRequest } = require('../config/database');
 const { hashPassword, comparePassword } = require('../utils/passwordUtils');
 const { sendEmail } = require('../utils/emailService');
 const jwt = require('jsonwebtoken');

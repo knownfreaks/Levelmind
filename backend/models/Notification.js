@@ -1,46 +1,47 @@
-// models/Notification.js
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const User = require('./User'); // User who receives the notification
+// backend/models/Notification.js
 
-const Notification = sequelize.define('Notification', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true,
-    allowNull: false
-  },
-  userId: { // The user who receives this notification
-    type: DataTypes.UUID,
-    allowNull: false,
-    references: {
-      model: User,
-      key: 'id'
+// This file defines the Notification model for user notifications.
+// It exports a function that takes the sequelize instance and DataTypes as arguments.
+module.exports = (sequelize, DataTypes) => {
+  const Notification = sequelize.define('Notification', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+      allowNull: false
     },
-    onDelete: 'CASCADE'
-  },
-  message: {
-    type: DataTypes.TEXT,
-    allowNull: false
-  },
-  type: { // e.g., 'application_received', 'application_shortlisted', 'interview_scheduled', 'help_request', 'bulk_operation_complete', 'success', 'error' (for UI display)
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  link: { // Optional deep link for frontend navigation
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  isRead: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false
-  }
-}, {
-  timestamps: true // createdAt will serve as 'timestamp'
-});
+    userId: { // The user who receives this notification
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: 'Users', // Reference the table name directly
+        key: 'id'
+      },
+      onDelete: 'CASCADE' // If a user is deleted, their notifications are also deleted
+    },
+    message: { // The content of the notification
+      type: DataTypes.TEXT,
+      allowNull: false
+    },
+    type: { // Type of notification (e.g., 'info', 'success', 'error', 'application_update')
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    link: { // Optional deep link for frontend navigation (e.g., to an application page)
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    isRead: { // Flag to track if the user has read the notification
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    }
+  }, {
+    // Model options
+    timestamps: true, // Automatically adds createdAt and updatedAt fields
+    tableName: 'Notifications' // Explicitly define table name
+  });
 
-// Define association
-Notification.belongsTo(User, { foreignKey: 'userId' });
-User.hasMany(Notification, { foreignKey: 'userId', as: 'notifications' });
+  // IMPORTANT: Associations are defined centrally in backend/config/database.js
 
-module.exports = Notification;
+  return Notification; // Return the defined Notification model
+};

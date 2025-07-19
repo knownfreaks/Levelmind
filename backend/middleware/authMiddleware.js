@@ -1,37 +1,39 @@
-// middleware/authMiddleware.js
+// backend/middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
-const User = require('../models/User'); // We need the User model to find the user by ID
+// Import User model from database.js
+const { User } = require('../config/database'); // <--- MODIFIED LINE
 
 const authMiddleware = async (req, res, next) => {
   let token;
 
-  // Check if token exists in Authorization header
+  // Check if token is present in headers
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    token = req.headers.authorization.split(' ')[1]; // Get token from "Bearer <token>"
+    try {
+      // Get token from header
+      token = req.headers.authorization.split(' ')[1];
+
+      // Verify token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+      // Find user by ID and attach to request object
+      // User.findByPk is now correctly called on the Sequelize Model
+      req.user = await User.findByPk(decoded.id, {
+        attributes: { exclude: ['password'] } // Exclude password from the user object
+      });
+
+      if (!req.user) {
+        return res.status(401).json({ success: false, message: 'Not authorized: User not found.' });
+      }
+
+      next(); // Proceed to the next middleware/route handler
+    } catch (error) {
+      console.error('Token verification error:', error.message); // Log the specific error message
+      return res.status(401).json({ success: false, message: 'Not authorized: Token failed or expired.' });
+    }
   }
 
   if (!token) {
-    return res.status(401).json({ success: false, message: 'Not authorized, no token' });
-  }
-
-  try {
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Attach user from the token to the request object
-    // Find the user by ID and exclude the password field
-    req.user = await User.findByPk(decoded.id, {
-      attributes: { exclude: ['password'] }
-    });
-
-    if (!req.user) {
-      return res.status(401).json({ success: false, message: 'Not authorized, user not found' });
-    }
-
-    next(); // Proceed to the next middleware/route handler
-  } catch (error) {
-    console.error('Token verification error:', error.message);
-    return res.status(401).json({ success: false, message: 'Not authorized, token failed' });
+    return res.status(401).json({ success: false, message: 'Not authorized: No token provided.' });
   }
 };
 
