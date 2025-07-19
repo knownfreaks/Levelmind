@@ -126,7 +126,7 @@ async function initializeDatabase() {
     await sequelize.authenticate();
     console.log('Database connection has been established successfully.');
     // Sync all models. { force: true } drops existing tables. Use with caution in production.
-    await sequelize.sync({ force: false }); // Set to true for development to recreate tables
+    await sequelize.sync({ force: true }); // Set to true for development to recreate tables
     console.log('Database synced successfully. All models were synchronized.');
     // Call seed function here if needed for development
     // require('./seed')();
